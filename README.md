@@ -13,21 +13,21 @@ weakens a rule.
 
 | | |
 |---|---|
-| Protocol | [`AUDIT.md`](./AUDIT.md) — current release **v2.1.1** |
+| Protocol | [`AUDIT.md`](./AUDIT.md) — current release **v1.0.0** |
 | History | [`CHANGELOG.md`](./CHANGELOG.md) · immutable copies in [`improve/versions/`](./improve/versions/) |
 | Self-improvement | [`improve/CRITIC.md`](./improve/CRITIC.md) — one evidenced change per cycle |
-| Regression gate | [`evals/`](./evals/) — **15 fixtures, 15/15 green** at v2.1.1, stdlib-only Python |
+| Regression gate | [`evals/`](./evals/) — **15 fixtures, 15/15 green** at v1.0.0, stdlib-only Python |
 | For agents | [`AGENTS.md`](./AGENTS.md) — machine-facing operating rules for this repo |
 
 ---
 
-## Why v2 exists (the 60-second story)
+## Why it looks like this (the 60-second story)
 
-v1 of this project was a 150 KB, 1,898-line mega-prompt with 40+ registered
-rules. It worked — but four production runs surfaced five failure modes that
-research says are *structural*, not accidental:
+The first internal version of this project was a 150 KB, 1,898-line mega-prompt
+with 40+ registered rules. It worked — but four production runs surfaced five
+failure modes that research says are *structural*, not accidental:
 
-| Observed failure | Root cause | v2 fix |
+| Observed failure | Root cause | The fix |
 |---|---|---|
 | Metrics "verified via static code analysis"; GUI profilers cited as CLI commands | "No script = no metric" gave the agent no honest way out, so it fabricated | **R1** — verbatim command + output required, or `UNMEASURED (reason)`; each measured metric traceable to `$ <verify command>` |
 | Benchmarked a metaphysics app against Palantir & IBM Watsonx | Mandatory "research Top-5 SOTA" forces the *format* of research even when no comparator exists | **R2** — every target is cited-with-URL **or** labeled `INTERNAL TARGET`; "No external benchmark applicable" is a valid answer |
@@ -38,8 +38,8 @@ research says are *structural*, not accidental:
 The deeper principle (IFScale, arXiv 2507.11538; "curse of instructions",
 arXiv 2509.21051): instruction-following decays measurably as instruction count
 grows, with bias toward earlier instructions. **Every non-essential rule lowers
-compliance with the essential ones.** v2 is short on purpose, and the critical
-rules come first on purpose.
+compliance with the essential ones.** The protocol is short on purpose, and the
+critical rules come first on purpose.
 
 ---
 
@@ -48,7 +48,7 @@ rules come first on purpose.
 **1. Copy the protocol into your target repo:**
 
 ```bash
-curl -O https://raw.githubusercontent.com/zintaen/prompts/main/AUDIT.md
+curl -O https://raw.githubusercontent.com/cyberskill-official/code-audit-framework/main/AUDIT.md
 # or just copy the AUDIT.md file into your repo root
 ```
 
@@ -162,14 +162,15 @@ regression-tested, and changed only with evidence.
 There is **no lifetime cap on cycles** — only per-campaign stop rules
 (2 consecutive zero-High cycles, or all failures promoted/deferred), the same
 diminishing-returns logic the protocol applies to codebases. The protocol has
-already been run on itself; the first campaign (2026-06-10, 5 cycles) produced:
+already been run on itself; the pre-release hardening campaign (2026-06-10,
+5 cycles) produced:
 
-| Cycle | Release | One change | Evals |
-|---|---|---|---|
-| 1 | v2.0.1 | Evidence must be row-traceable: each measured metric's output block opens with `$ <verify command>` (closed a partial-fabrication exploit) | 13/13 |
-| 2 | v2.1.0 | Gated approval became a durable `Approved:` artifact (restored the human-control guarantee the rewrite had dropped) | 14/14 |
-| 3 | v2.1.1 | One escape-hatch vocabulary across R1 and Phase 5 (compliant runs were flagged as violations) | 15/15 |
-| 4–5 | — | Zero findings ≥ High, twice → campaign stop (a) | 15/15 |
+| Cycle | One change | Evals |
+|---|---|---|
+| 1 | Evidence must be row-traceable: each measured metric's output block opens with `$ <verify command>` (closed a partial-fabrication exploit) | 13/13 |
+| 2 | Gated approval became a durable `Approved:` artifact (restored the human-control guarantee the rewrite had dropped) | 14/14 |
+| 3 | One escape-hatch vocabulary across R1 and Phase 5 (compliant runs were flagged as violations) | 15/15 |
+| 4–5 | Zero findings ≥ High, twice → campaign stop (a) | 15/15 |
 
 Full evidence trail: [`CHANGELOG.md`](./CHANGELOG.md),
 [`improve/FAILURE_LOG.md`](./improve/FAILURE_LOG.md),
@@ -209,8 +210,8 @@ improve/
   CRITIC.md              ← the self-improvement cycle (meta-prompt)
   RETROSPECTIVE.md       ← 10-question post-run rubric (/20)
   FAILURE_LOG.md         ← failures → candidate edits → promotions
-  versions/              ← immutable released versions (v2.0.0 … v2.1.1)
-  retros/                ← filled retrospectives (cycles 1–5 included)
+  versions/              ← immutable released versions (v1.0.0 …)
+  retros/                ← filled retrospectives (pre-release cycles 1–5 included)
 evals/
   validate.py            ← deterministic conformance checker (stdlib only)
   fixtures/              ← G* compliant runs + B* fault-injection traps (15)
@@ -237,7 +238,7 @@ evals/
 - **Prompt compliance is probabilistic.** Even this protocol is advisory to the agent running it. The eval harness catches dishonest *artifacts*; it cannot force honest *behavior* mid-run. For non-negotiables, use deterministic hooks in your own CI.
 - **The validator is a tripwire, not a proof.** Denylists (GUI tools, secret patterns) are finite; substring matching can false-positive on prose. Known limits are documented in `evals/rules.json` and `improve/retros/2026-06-10-cycle-4.md`.
 - **Harnesses go stale as models improve.** Re-examine the CORE RULES every few model generations; scaffolding that helps today may be dead weight tomorrow.
-- **Small evidence base.** v2's redesign is grounded in 4 documented production runs plus published research; its effectiveness is validated continuously through the retrospective system — that's what the loop is for.
+- **Small evidence base.** The redesign is grounded in 4 documented production runs plus published research; its effectiveness is validated continuously through the retrospective system — that's what the loop is for.
 
 ---
 

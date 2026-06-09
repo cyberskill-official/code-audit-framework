@@ -4,6 +4,10 @@ Maps recurring failures to candidate edits. **Promote a fix only after the
 failure recurs** (Rule of Three: 1st time = note it, 2nd time = candidate edit,
 promoted = new version via `improve/CRITIC.md`). One row per observation.
 
+> Version ids below the public 1.0.0 release ("v1 era", v2.0.0–v2.1.1) are
+> internal pre-release identifiers; that lineage lives in git history. Rows are
+> historical records and are never renumbered.
+
 | Date | Project / run | Failure observed | Retro item | Seen before? | Candidate edit | Promoted to version? |
 |------|---------------|------------------|-----------|--------------|----------------|----------------------|
 | 2026-04 (v1 era) | Qi Men metaphysics app | Benchmarked vs Palantir/IBM Watsonx with no relevant public benchmark | #2 | 2nd time | Honest-targets gate with URL-or-INTERNAL rule | v2.0.0 (R2) |

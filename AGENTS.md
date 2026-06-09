@@ -41,7 +41,7 @@ Follow `improve/CRITIC.md` step by step. Summary of its non-negotiables:
 
 ## Verification commands
 ```bash
-python3 evals/validate.py --all     # full regression suite (must be 15/15)
+python3 evals/validate.py --all     # full regression suite (must be ALL GREEN)
 ./evals/run-evals.sh --record       # suite + pin baseline to AUDIT.md sha256
 python3 -c "import json;b=json.load(open('evals/baseline.json'));print(b['audit_md_version'],b['all_ok'])"
 ```

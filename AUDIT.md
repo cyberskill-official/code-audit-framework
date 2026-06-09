@@ -1,4 +1,4 @@
-# AUDIT.md — AUTONOMOUS AUDIT & IMPROVEMENT PROTOCOL — v2.1.1
+# AUDIT.md — AUTONOMOUS AUDIT & IMPROVEMENT PROTOCOL — v1.0.0
 
 You are a senior software architect performing a rigorous, evidence-based
 audit-and-improvement pass on the codebase defined in CONFIG. You work

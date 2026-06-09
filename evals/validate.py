@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""validate.py — deterministic conformance checker for AUDIT.md (v2.x) outputs.
+"""validate.py — deterministic conformance checker for AUDIT.md outputs.
 
 Checks a run's docs/ directory (BACKLOG.md + HANDOFF.md) against the
 machine-checkable subset of AUDIT.md's core rules:
@@ -183,7 +183,7 @@ def check_benchmark_like_table(header, rows, end_idx, text, violations, src, is_
     fences = section_fences(text, end_idx)
     if has_measured_row and not fences:
         violations.append(("R1-NO-OUTPUT", src, "table has MEASURED/measured rows but no fenced raw-output block before next heading"))
-    # …and each measured row must be traceable to ITS verify command (v2.0.1)
+    # …and each measured row must be traceable to ITS verify command
     elif fences:
         joined = "\n".join(fences)
         for metric, verify in measured_rows:
@@ -222,7 +222,7 @@ EXECUTED_STATUSES = {"DONE", "IN-PROGRESS", "BLOCKED"}
 
 
 def check_approvals(text, violations, src):
-    """Gated-mode invariant (v2.1.0): if a loop section carries an `Approved:`
+    """Gated-mode invariant: if a loop section carries an `Approved:`
     line, every executed task (DONE / IN-PROGRESS / BLOCKED) in that section
     must be listed on it. Sections without an Approved line are not checked
     (autonomous mode)."""

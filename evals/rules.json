@@ -1,6 +1,6 @@
 {
   "$schema_version": "2.0.0",
-  "description": "Registry of machine-checkable rules in AUDIT.md v2.x. Every rule the validator enforces is anchored to its section in AUDIT.md and to the fixtures that prove it load-bearing. A rule with no fixture is a coverage gap; list it honestly.",
+  "description": "Registry of machine-checkable rules in AUDIT.md. Every rule the validator enforces is anchored to its section in AUDIT.md and to the fixtures that prove it load-bearing. A rule with no fixture is a coverage gap; list it honestly.",
   "protocol_file": "AUDIT.md",
   "rules": [
     {
@@ -57,7 +57,7 @@
     },
     {
       "rule_id": "P2-GATE",
-      "anchor": "PHASE 2 — gated-mode approval artifact (v2.1.0)",
+      "anchor": "PHASE 2 — gated-mode approval artifact",
       "violation_codes": ["GATED-UNAPPROVED-EXEC"],
       "fixtures_exercising": ["G01-clean-run", "B12-gated-unapproved-exec"],
       "coverage_note": "Checked only when an `Approved:` line is present in a loop section; autonomous runs carry no such line."

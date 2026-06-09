@@ -1,7 +1,7 @@
 {
-  "audit_md_version": "v2.1.1",
-  "audit_md_sha256": "69280d1fd7177b4fdaa20fd58b6dfa5b4b2e2f85f05ac489a10bac082ca56d02",
-  "recorded_at": "2026-06-09T23:14:18+00:00",
+  "audit_md_version": "v1.0.0",
+  "audit_md_sha256": "b8d66b389938c10470afc1ec7799b3f8bfb680869c7e0067e086a2e5d33e3c2f",
+  "recorded_at": "2026-06-09T23:56:24+00:00",
   "fixtures": 15,
   "passed": 15,
   "all_ok": true,
