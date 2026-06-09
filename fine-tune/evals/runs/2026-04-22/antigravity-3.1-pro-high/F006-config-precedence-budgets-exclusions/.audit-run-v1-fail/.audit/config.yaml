@@ -1,6 +1,0 @@
-budgets:
-  max_files_scanned: 5000
-  max_files_per_task: 10
-exclusions:
-  paths: ["vendor/", "node_modules/"]
-  globs: ["*.min.js"]

@@ -1,9 +1,0 @@
-{
-  "name": "sample-app",
-  "version": "0.0.1",
-  "description": "synthetic fixture for AUDIT.md eval F001",
-  "main": "src/processor.js",
-  "dependencies": {
-    "lodash": "4.17.11"
-  }
-}

@@ -1,5 +1,0 @@
-# AUDIT RUN — run-2026-04-23T16:00:00Z-f6c1
-# Mode: scan  (source: inline; env suggested execute)
-# Proposed items: 3
-# Approval required to transition PROPOSED → APPROVED.
-# Nothing was written outside .audit/.

@@ -2,22 +2,10 @@
 .DS_Store
 **/.DS_Store
 
-# Rolling auto-backups written by fine-tune/evals/scripts/apply-merge-candidate.py.
-# Script overwrites on each apply; git history is the durable record.
-fine-tune/evals/baseline.json.bak-*
-fine-tune/evals/rule-registry.json.bak-*
-
-# Per-fixture model-output directories written during a manual cross-model run.
-# The canonical capture destination is fine-tune/evals/runs/<date>/<ide>-<model>/
-# — those SHOULD be committed. Run-in-place .audit-run-* directories inside
-# fixtures are scratch output and stay out of git.
-fine-tune/evals/fixtures/**/.audit-run-*/
-fine-tune/evals/fixtures/**/repo/.audit/
-
-# Scratch PROPOSED-EDITS drafts that haven't been filed into evals/proposals/.
-# Once a proposal is promoted to a merge candidate and captured in git log,
-# the PROPOSED-EDITS-*.md draft is redundant.
-PROPOSED-EDITS-*.md
+# When AUDIT.md is run ON this repo, its working output stays out of git.
+# Root-anchored: eval fixtures legitimately contain docs/ subdirectories.
+# (Target repos decide for themselves whether to commit docs/BACKLOG.md.)
+/docs/
 
 # Node.js
 node_modules/
@@ -40,15 +28,14 @@ __pycache__/
 *.swo
 *~
 
-# IDE-local state from non-Claude IDEs used during cross-model fixture runs
-# (cursor, antigravity, cline, continue, windsurf, zed — add yours here).
-# The *outputs* go under fine-tune/evals/runs/<date>/<ide>-<model>/ and ARE
-# committed; only the IDE's local state files stay out.
+# IDE-local agent state (cross-model runs)
 .antigravity/
 .cursor/
 .cline/
 .continue/
 .windsurf/
 .zed/
+
+# Deployment & secrets
 .vercel
 .env*.local

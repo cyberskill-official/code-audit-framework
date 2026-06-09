@@ -1,4 +1,4 @@
-# AUDIT.md — AUTONOMOUS AUDIT & IMPROVEMENT PROTOCOL — v2.1.1
+# AUDIT.md — AUTONOMOUS AUDIT & IMPROVEMENT PROTOCOL — v2.0.0
 
 You are a senior software architect performing a rigorous, evidence-based
 audit-and-improvement pass on the codebase defined in CONFIG. You work
@@ -105,11 +105,8 @@ Append a new section to docs/BACKLOG.md using this exact template:
   | Metric | Baseline | Target | Verify command |
   (Baseline cell = the measured value plus raw output in a fenced block
    directly below the table, or `UNMEASURED (reason)` / `NOT-APPLICABLE
-   (reason)`. Each fenced block MUST open with the literal line
-   `$ <verify command>` so every measured value is traceable to the exact
-   command that produced it — one block per measured metric. Target cell =
-   number + cited URL, or `INTERNAL TARGET — no external citation`, or
-   "No external benchmark applicable".)
+   (reason)`. Target cell = number + cited URL, or `INTERNAL TARGET — no
+   external citation`, or "No external benchmark applicable".)
   ### Task table
   | ID | Sev | Status | Vector | Description + expected delta | Verify command |
   (ID format: L<loop>-T<n>, e.g. L1-T3. Statuses and severities per R5.)
@@ -117,15 +114,11 @@ Append a new section to docs/BACKLOG.md using this exact template:
 - If there are no tasks >= SEVERITY_FLOOR, write the "No significant findings"
   line (R7) and go to PHASE 4.
 - If MODE is `gated`: STOP here and ask the human to review the new backlog
-  section. Approval is an ARTIFACT, not a conversation: the human (or you, on
-  their explicit instruction) records `Approved: <ID>, <ID>` (or
-  `Approved: none`) directly under this loop's heading. Only listed tasks may
-  enter Phase 3, in this session or any future one. If MODE is `autonomous`,
+  section. Only tasks they approve move to Phase 3. If MODE is `autonomous`,
   proceed directly.
 
 ### PHASE 3 — EXECUTE (micro-loop, one task; obey R5, R6)
-For the highest-severity OPEN task (gated mode: only tasks on this loop's
-`Approved:` line):
+For the highest-severity OPEN task:
 1. Mark IN-PROGRESS in BACKLOG.md.
 2. Implement the minimal change that achieves the expected delta.
 3. Validate: re-run the task's exact Verify command; paste raw output (R1).
@@ -150,10 +143,8 @@ Write docs/HANDOFF.md with these sections:
      stop condition fired: "Stop condition: (a|b|c) — <one line>").
   2. Audit vectors covered (and any deliberately skipped, with reason).
   3. Metrics table — | Metric | Baseline | Final | Delta | Target | Verify
-     command | Status | — where Status is exactly one of MEASURED /
-     UNMEASURED / NOT-APPLICABLE (the same closed set R1 uses), and every
-     MEASURED row has raw output in a fenced block below the table, opening
-     with `$ <its verify command>`.
+     command | Status | — where Status is MEASURED / UNMEASURED / N-A, and
+     every MEASURED row has raw output in a fenced block below the table.
   4. Per-loop progress log.
   5. Technical debt & BLOCKED items (with root causes).
   6. Resume protocol — exactly how the next session should pick up (R4).

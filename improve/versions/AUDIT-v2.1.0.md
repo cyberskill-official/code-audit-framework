@@ -1,4 +1,4 @@
-# AUDIT.md — AUTONOMOUS AUDIT & IMPROVEMENT PROTOCOL — v2.1.1
+# AUDIT.md — AUTONOMOUS AUDIT & IMPROVEMENT PROTOCOL — v2.1.0
 
 You are a senior software architect performing a rigorous, evidence-based
 audit-and-improvement pass on the codebase defined in CONFIG. You work
@@ -150,10 +150,9 @@ Write docs/HANDOFF.md with these sections:
      stop condition fired: "Stop condition: (a|b|c) — <one line>").
   2. Audit vectors covered (and any deliberately skipped, with reason).
   3. Metrics table — | Metric | Baseline | Final | Delta | Target | Verify
-     command | Status | — where Status is exactly one of MEASURED /
-     UNMEASURED / NOT-APPLICABLE (the same closed set R1 uses), and every
-     MEASURED row has raw output in a fenced block below the table, opening
-     with `$ <its verify command>`.
+     command | Status | — where Status is MEASURED / UNMEASURED / N-A, and
+     every MEASURED row has raw output in a fenced block below the table,
+     opening with `$ <its verify command>`.
   4. Per-loop progress log.
   5. Technical debt & BLOCKED items (with root causes).
   6. Resume protocol — exactly how the next session should pick up (R4).

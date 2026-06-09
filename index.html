@@ -3,1309 +3,473 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AUDIT.md — a self-auditing repo-audit prompt</title>
-<meta name="description" content="AUDIT.md is a large, opinionated LLM-run codebase auditor, hardened by a regression harness that blocks drift. Introduce it, read its structure, run it on any project, and fine-tune it safely." />
+<title>AUDIT.md by CyberSkill — an honest, self-improving audit protocol for AI coding agents</title>
+<meta name="description" content="AUDIT.md is a ~160-line, AI-agnostic master prompt that turns any coding agent into an evidence-based codebase auditor — with a self-improvement loop, versioned releases, and a fault-injection regression harness. Built by CyberSkill." />
+<meta property="og:title" content="AUDIT.md by CyberSkill — honest audits from AI coding agents" />
+<meta property="og:description" content="Evidence or nothing. Honest targets only. A protocol that improves itself — every change evidenced, versioned, and regression-gated." />
+<meta property="og:type" content="website" />
 
 <link rel="icon" type="image/svg+xml" href="assets/cyberskill-logo.svg">
-<link rel="alternate icon" type="image/svg+xml" href="assets/cyberskill-logo.svg">
 <link rel="apple-touch-icon" href="assets/cyberskill-logo.svg">
 <meta name="theme-color" content="#45210E">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Text:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        fontFamily: {
-          sans: ['"Red Hat Text"', 'system-ui', 'sans-serif'],
-          mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
-        },
-        colors: {
-          brown: {
-            50:  '#FAF2E6',
-            100: '#F0DCC4',
-            200: '#E6C7AA',
-            300: '#D4A884',
-            400: '#BF8A61',
-            500: '#A56D44',
-            600: '#8A5530',
-            700: '#71401F',
-            800: '#5A2E15',
-            900: '#45210E',
-            950: '#2A140A',
-          },
-          gold: {
-            50:  '#FEF9EA',
-            100: '#FDF1D3',
-            200: '#FBE3A8',
-            300: '#F9D478',
-            400: '#F6C644',
-            500: '#F4BA17',
-            600: '#E2AC13',
-            700: '#D19D10',
-            800: '#B0810D',
-            900: '#8A6508',
-          },
-          cream: {
-            50:  '#FBF7EF',
-            100: '#F7F1E4',
-            200: '#EFE7D6',
-            300: '#E3D8C5',
-            400: '#D0C1AD',
-            500: '#B8A693',
-            600: '#9A8573',
-            700: '#7A6454',
-            800: '#5B473A',
-            900: '#3F2F22',
-            950: '#1D120A',
-          },
-          olive:      { 600: '#657B3A' },
-          ochre:      { 600: '#B88A1C' },
-          terracotta: { 600: '#B85138' },
-          info:       { 600: '#2F6B8C' },
-        },
-        letterSpacing: {
-          eyebrow: '0.14em',
-          slogan:  '0.16em',
-          tight2:  '-0.03em',
-        },
-        boxShadow: {
-          'warm-xs':   '0 1px 2px 0 rgba(69, 33, 14, 0.06)',
-          'warm-sm':   '0 2px 4px -1px rgba(69, 33, 14, 0.08), 0 1px 2px -1px rgba(69, 33, 14, 0.05)',
-          'warm-md':   '0 6px 14px -4px rgba(69, 33, 14, 0.10), 0 2px 4px -2px rgba(69, 33, 14, 0.06)',
-          'warm-lg':   '0 14px 30px -10px rgba(69, 33, 14, 0.14), 0 4px 8px -4px rgba(69, 33, 14, 0.08)',
-          'warm-xl':   '0 28px 48px -16px rgba(69, 33, 14, 0.20), 0 8px 16px -8px rgba(69, 33, 14, 0.10)',
-          'glow-gold': '0 0 0 1px rgba(244, 186, 23, 0.35), 0 14px 30px -10px rgba(244, 186, 23, 0.35)',
-        },
-      },
-    },
-  };
-</script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
 <style>
-  html { scroll-behavior: smooth; overflow-x: clip; }
-  body { font-family: "Red Hat Text", system-ui, sans-serif; font-weight: 500; overflow-x: clip; }
-  strong, b, h1, h2, h3, h4, h5, h6 { font-weight: 700; }
+/* ============================================================
+   CyberSkill Global Design System — token layer (DTCG source:
+   design-system/packages/tokens). Umber + Ochre anchors are
+   immutable. Surface treatment: Liquid Glass (DESIGN.md Part 21).
+   ============================================================ */
+:root{
+  --cs-umber:#45210E;            /* cs.color.brand.umber  */
+  --cs-ochre:#F4BA17;            /* cs.color.brand.ochre  */
+  --cs-page:#FFFDF8;             /* cs.color.surface.page */
+  --cs-panel:#FFFFFF;            /* cs.color.surface.panel */
+  --cs-text:#45210E;             /* cs.color.text.primary */
+  --cs-text-accent:#6E3B0E;      /* cs.color.text.accent  */
+  --cs-inverse:#FFFFFF;
+  --cs-success:#166534; --cs-danger:#B42318; --cs-warning:#92400E; --cs-info:#1D4ED8;
+  --cs-border:rgba(69,33,14,.12);
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px;
+  --r-sm:4px; --r-md:8px; --r-lg:16px; --r-full:999px;
+  --font-ui:'Be Vietnam Pro',ui-sans-serif,system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  /* Liquid Glass materials */
+  --glass-light-bg:rgba(255,255,255,.55);
+  --glass-standard-bg:rgba(255,255,255,.72);
+  --glass-heavy-bg:rgba(255,253,248,.88);
+  --glass-blur:18px; --glass-sat:120%;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{
+  font-family:var(--font-ui);color:var(--cs-text);background:var(--cs-page);
+  line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+/* warm ambient field the glass refracts */
+.ambient{position:fixed;inset:0;z-index:-1;pointer-events:none;background:
+  radial-gradient(60rem 38rem at 85% -10%,rgba(244,186,23,.16),transparent 60%),
+  radial-gradient(48rem 32rem at -10% 30%,rgba(110,59,14,.10),transparent 60%),
+  radial-gradient(40rem 28rem at 60% 110%,rgba(244,186,23,.10),transparent 55%),
+  var(--cs-page);}
+h1,h2,h3,h4{line-height:1.35;letter-spacing:-.01em}
+p{max-width:68ch}
+a{color:var(--cs-text-accent)}
+a:focus-visible,button:focus-visible{outline:3px solid var(--cs-ochre);outline-offset:2px;border-radius:var(--r-sm)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(16px,4vw,32px)}
+.mono{font-family:var(--font-mono)}
+.eyebrow{display:inline-flex;align-items:center;gap:var(--sp-2);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cs-text-accent)}
+.eyebrow::before{content:"";width:24px;height:2px;background:var(--cs-ochre);border-radius:var(--r-full)}
+section{padding:clamp(56px,9vw,104px) 0}
+.section-head{margin-bottom:clamp(28px,5vw,48px)}
+.section-head h2{font-size:clamp(26px,4vw,40px);font-weight:800;margin-top:var(--sp-3)}
+.section-head .vn{display:block;font-size:14px;font-weight:500;color:var(--cs-text-accent);margin-top:var(--sp-1)}
+.section-head p.lede{margin-top:var(--sp-3);font-size:clamp(15px,1.8vw,18px);color:#5b3a22}
 
-  /* Textures from the brand — brown-tinted */
-  .tex-glow {
-    background:
-      radial-gradient(circle at 75% 30%, rgba(244, 186, 23, 0.18) 0%, transparent 55%),
-      radial-gradient(circle at 20% 80%, rgba(244, 186, 23, 0.06) 0%, transparent 50%);
-  }
-  .tex-grid {
-    background-image:
-      linear-gradient(rgba(69, 33, 14, 0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(69, 33, 14, 0.06) 1px, transparent 1px);
-    background-size: 24px 24px;
-  }
-  .tex-dots {
-    background-image: radial-gradient(rgba(69, 33, 14, 0.18) 1px, transparent 1.5px);
-    background-size: 16px 16px;
-  }
-  .tex-stripes {
-    background-image: repeating-linear-gradient(135deg,
-      rgba(69, 33, 14, 0.00) 0px,
-      rgba(69, 33, 14, 0.00) 10px,
-      rgba(244, 186, 23, 0.14) 10px,
-      rgba(244, 186, 23, 0.14) 12px);
-  }
+/* Liquid Glass surfaces — blur + saturate + lens edge (Part 21) */
+.glass,.glass-std,.glass-heavy{
+  position:relative;border-radius:var(--r-lg);border:1px solid var(--cs-border);
+  box-shadow:0 1px 2px rgba(69,33,14,.05),0 12px 32px -16px rgba(69,33,14,.18);
+}
+.glass{background:var(--glass-light-bg)}
+.glass-std{background:var(--glass-standard-bg)}
+.glass-heavy{background:var(--glass-heavy-bg)}
+.glass,.glass-std,.glass-heavy{backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat))}
+.glass::after,.glass-std::after,.glass-heavy::after{ /* lens edge */
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(69,33,14,.04);
+}
 
-  /* Component transitions — dur-base 200ms, ease-out */
-  .card        { transition: transform 200ms cubic-bezier(.22,1,.36,1), box-shadow 200ms cubic-bezier(.22,1,.36,1), border-color 200ms cubic-bezier(.22,1,.36,1); }
-  .card:hover  { transform: translateY(-2px); box-shadow: 0 18px 36px -14px rgba(69, 33, 14, 0.18), 0 4px 8px -4px rgba(69, 33, 14, 0.08); }
+/* ============ NAV ============ */
+nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px) saturate(120%);-webkit-backdrop-filter:blur(14px) saturate(120%);background:rgba(255,253,248,.82);border-bottom:1px solid var(--cs-border)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{display:flex;align-items:center;gap:var(--sp-3);text-decoration:none;color:var(--cs-text)}
+.brand b{font-size:17px;font-weight:800}
+.brand .by{display:block;font-size:9.5px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--cs-text-accent)}
+.nav-links{display:flex;align-items:center;gap:clamp(10px,2vw,24px);list-style:none}
+.nav-links a{font-size:14px;font-weight:600;text-decoration:none;color:var(--cs-text-accent)}
+.nav-links a:hover{color:var(--cs-umber)}
+.nav-links .hide-sm{display:none}
+@media(min-width:760px){.nav-links .hide-sm{display:inline}}
+.btn{display:inline-flex;align-items:center;gap:var(--sp-2);font-family:var(--font-ui);font-size:14.5px;font-weight:700;text-decoration:none;border-radius:var(--r-full);padding:11px 22px;border:1px solid transparent;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--cs-umber);color:var(--cs-inverse);box-shadow:0 6px 18px -8px rgba(69,33,14,.5)} /* cs.component.button.primary */
+.btn-primary:hover{box-shadow:0 10px 24px -10px rgba(69,33,14,.55)}
+.btn-ghost{background:transparent;color:var(--cs-umber);border-color:rgba(69,33,14,.28)}
+.btn-ochre{background:var(--cs-ochre);color:var(--cs-umber)}
 
-  /* Brand hero headline — 72px, 1.02, -0.03em */
-  .hero-title { font-size: clamp(44px, 7.2vw, 84px); line-height: 1.02; letter-spacing: -0.03em; font-weight: 700; }
+/* ============ HERO ============ */
+.hero{padding:clamp(56px,9vw,110px) 0 clamp(40px,6vw,72px)}
+.hero-grid{display:grid;gap:clamp(28px,5vw,56px);align-items:center}
+@media(min-width:960px){.hero-grid{grid-template-columns:1.05fr .95fr}}
+.badge{display:inline-flex;align-items:center;gap:var(--sp-2);font-family:var(--font-mono);font-size:12.5px;font-weight:500;color:var(--cs-text-accent);background:rgba(244,186,23,.14);border:1px solid rgba(244,186,23,.45);border-radius:var(--r-full);padding:6px 14px}
+.badge .dot{width:7px;height:7px;border-radius:50%;background:var(--cs-success)}
+.hero h1{font-size:clamp(38px,6.4vw,68px);font-weight:800;line-height:1.04;letter-spacing:-.03em;margin:18px 0 14px}
+.hero h1 .ochre{color:transparent;background:linear-gradient(100deg,var(--cs-text-accent),#a35c12 45%,var(--cs-ochre));-webkit-background-clip:text;background-clip:text}
+.hero .sub{font-size:clamp(16px,2vw,19px);color:#5b3a22;max-width:56ch}
+.hero .slogan{margin-top:var(--sp-4);font-size:13px;font-weight:600;letter-spacing:.08em;color:var(--cs-text-accent)}
+.hero-ctas{display:flex;flex-wrap:wrap;gap:var(--sp-3);margin-top:28px}
+.hero-note{margin-top:var(--sp-3);font-size:13px;color:#7a5a40}
+/* terminal */
+.term{overflow:hidden;font-family:var(--font-mono);font-size:12.8px;line-height:1.62}
+.term-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--cs-border);background:rgba(255,255,255,.5)}
+.term-bar i{width:10px;height:10px;border-radius:50%;display:block}
+.term-bar .t{margin-left:8px;font-size:11.5px;color:var(--cs-text-accent)}
+.term-body{padding:18px 20px;color:#4a2c14;white-space:pre-wrap}
+.tk-c{color:#8a6a4e}      /* comment  */
+.tk-p{color:var(--cs-text-accent);font-weight:700} /* prompt   */
+.tk-g{color:var(--cs-success);font-weight:700}     /* green    */
+.tk-o{color:#a35c12;font-weight:700}               /* ochre-ish*/
+.tk-r{color:var(--cs-danger);font-weight:700}
 
-  /* Eyebrow helper */
-  .eyebrow { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; }
+/* stats strip */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--sp-4);margin-top:clamp(36px,6vw,64px)}
+@media(min-width:760px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{padding:20px 22px;text-align:left}
+.stat b{display:block;font-size:clamp(24px,3vw,34px);font-weight:800;letter-spacing:-.02em}
+.stat span{font-size:13px;color:var(--cs-text-accent);font-weight:600}
+.stat .mono-sub{font-family:var(--font-mono);font-size:11px;color:#8a6a4e;display:block;margin-top:4px}
 
-  /* Gold emphasis — replaces italic */
-  .gold { color: #E2AC13; } /* gold-600 on light */
-  .gold-strong { color: #F4BA17; } /* gold-500 on dark */
+/* ============ CARD GRIDS ============ */
+.grid{display:grid;gap:var(--sp-4)}
+@media(min-width:700px){.grid-2{grid-template-columns:1fr 1fr}.grid-3{grid-template-columns:repeat(3,1fr)}.grid-4{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1020px){.grid-4{grid-template-columns:repeat(4,1fr)}}
+.card{padding:24px}
+.card h3{font-size:16.5px;font-weight:700;display:flex;align-items:center;gap:10px}
+.card p{font-size:14.2px;color:#5b3a22;margin-top:8px}
+.card .mono-tag{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--cs-text-accent);background:rgba(244,186,23,.16);border:1px solid rgba(244,186,23,.4);padding:3px 9px;border-radius:var(--r-full)}
+.fail .mono-tag{color:var(--cs-danger);background:rgba(180,35,24,.07);border-color:rgba(180,35,24,.25)}
+.fix-line{margin-top:10px;font-size:13px;font-weight:600;color:var(--cs-success)}
+.fix-line .mono{font-size:12px}
 
-  /* Code sample */
-  pre.code {
-    font-family: "JetBrains Mono", ui-monospace, monospace;
-    font-size: 13px;
-    line-height: 1.6;
-    white-space: pre;
-    overflow-x: auto;
-    color: #FAF2E6;
-    background: #2A140A;
-    border: 1px solid #45210E;
-    border-radius: 12px;
-    padding: 20px 24px;
-  }
-  /* On narrow viewports wrap code lines instead of overflowing */
-  @media (max-width: 767px) {
-    pre.code {
-      white-space: pre-wrap;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-      font-size: 12px;
-      padding: 16px 18px;
-    }
-  }
-  pre.code .c-comment { color: #D4A884; }
-  pre.code .c-str     { color: #F9D478; }
-  pre.code .c-key     { color: #F6C644; }
-  pre.code .c-cmd     { color: #FDF1D3; font-weight: 700; }
+/* rules */
+.rule-num{font-family:var(--font-mono);font-weight:700;font-size:13px;color:var(--cs-umber);background:var(--cs-ochre);border-radius:var(--r-sm);padding:2px 8px}
 
-  /* Focus ring — gold */
-  a:focus-visible, button:focus-visible { outline: 2px solid #F4BA17; outline-offset: 2px; border-radius: 6px; }
+/* ============ PHASES ============ */
+.phases{display:grid;gap:var(--sp-3)}
+.phase{display:grid;grid-template-columns:56px 1fr;gap:16px;padding:18px 20px;align-items:start}
+.phase .n{font-family:var(--font-mono);font-weight:700;font-size:20px;color:var(--cs-text-accent);background:rgba(244,186,23,.18);border:1px solid rgba(244,186,23,.45);border-radius:var(--r-md);width:48px;height:48px;display:flex;align-items:center;justify-content:center}
+.phase h3{font-size:15.5px;font-weight:700}
+.phase p{font-size:13.8px;color:#5b3a22;margin-top:4px}
+.phase .gate{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:var(--cs-warning);background:rgba(146,64,14,.08);border:1px solid rgba(146,64,14,.25);border-radius:var(--r-full);padding:3px 10px}
+
+/* ============ LOOP / CAMPAIGN TABLE ============ */
+.looprow{display:grid;gap:var(--sp-4)}
+@media(min-width:960px){.looprow{grid-template-columns:1.1fr .9fr}}
+table{width:100%;border-collapse:collapse;font-size:13.6px}
+th{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--cs-text-accent);text-align:left;padding:10px 12px;border-bottom:2px solid rgba(69,33,14,.18)}
+td{padding:11px 12px;border-bottom:1px solid var(--cs-border);vertical-align:top}
+td .mono{font-size:12.2px}
+.ok{color:var(--cs-success);font-weight:700;font-family:var(--font-mono);font-size:12.5px}
+.loop-steps{counter-reset:s;list-style:none;display:grid;gap:10px}
+.loop-steps li{counter-increment:s;display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:start;font-size:14px;color:#4a2c14}
+.loop-steps li::before{content:counter(s);font-family:var(--font-mono);font-weight:700;font-size:12.5px;color:var(--cs-umber);background:var(--cs-ochre);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.loop-steps .mono{font-size:12.5px}
+
+/* code block */
+.codeblock{font-family:var(--font-mono);font-size:13px;line-height:1.7;padding:18px 20px;border-radius:var(--r-md);background:#2b1608;color:#f6e7c8;overflow-x:auto}
+.codeblock .c{color:#b59676}.codeblock .g{color:#7fd494}.codeblock .y{color:var(--cs-ochre)}
+
+/* tools strip */
+.tools{display:flex;flex-wrap:wrap;gap:var(--sp-3)}
+.tool{font-family:var(--font-mono);font-size:13px;font-weight:500;padding:10px 18px;border-radius:var(--r-full)}
+
+/* ============ PARTNER BAND ============ */
+.band{border-radius:var(--r-lg);padding:clamp(32px,5vw,56px);background:linear-gradient(115deg,var(--cs-umber),#5d2f12 55%,#7a4513);color:var(--cs-inverse);position:relative;overflow:hidden}
+.band::before{content:"";position:absolute;width:520px;height:520px;border-radius:50%;right:-160px;top:-220px;background:radial-gradient(circle,rgba(244,186,23,.35),transparent 65%)}
+.band h2{font-size:clamp(24px,3.6vw,36px);font-weight:800}
+.band p{color:#f3e3cd;margin-top:10px;font-size:15.5px}
+.band .vn{color:var(--cs-ochre);font-weight:600;font-size:13.5px;letter-spacing:.06em;margin-top:6px}
+.band ul{margin:18px 0 26px;padding-left:0;list-style:none;display:grid;gap:8px;font-size:14.5px;color:#f3e3cd}
+.band li::before{content:"✓";color:var(--cs-ochre);font-weight:800;margin-right:10px}
+
+/* ============ FOOTER ============ */
+footer{border-top:1px solid var(--cs-border);padding:40px 0 56px;font-size:13.5px;color:#6b4a2f}
+.foot{display:grid;gap:24px}
+@media(min-width:760px){.foot{grid-template-columns:1.4fr 1fr 1fr}}
+footer h4{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--cs-text-accent);margin-bottom:10px}
+footer a{text-decoration:none}
+footer a:hover{text-decoration:underline}
+.foot-brand{display:flex;gap:12px;align-items:flex-start}
+.legal{margin-top:28px;padding-top:18px;border-top:1px solid var(--cs-border);font-size:12px;color:#8a6a4e;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between}
+.skip{position:absolute;left:-9999px;top:0;background:var(--cs-ochre);color:var(--cs-umber);font-weight:700;padding:10px 16px;border-radius:var(--r-sm);z-index:100}
+.skip:focus{left:16px;top:12px}
 </style>
 </head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="ambient" aria-hidden="true"></div>
 
-<body class="bg-cream-50 text-brown-950 antialiased">
-
-<!-- Vercel Web Analytics -->
-<script src="assets/analytics.bundle.js"></script>
-
-<!-- NAV -->
-<nav class="sticky top-0 z-50 bg-cream-50/95 backdrop-blur border-b border-brown-100">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-    <a href="#top" class="flex items-center gap-2 sm:gap-3 min-w-0">
-      <span class="inline-flex w-9 h-9 rounded-md bg-brown-900 items-center justify-center overflow-hidden flex-shrink-0">
-        <img src="assets/cyberskill-logo.svg" alt="CyberSkill" width="28" height="34" class="select-none"/>
-      </span>
-      <span class="font-bold tracking-tight text-brown-900 text-[15px] sm:text-[17px] leading-none min-w-0">
-        AUDIT<span class="text-gold-600">.md</span>
-        <span class="block text-[9px] sm:text-[10px] font-bold tracking-slogan uppercase text-brown-500 mt-1">by CyberSkill</span>
-      </span>
+<nav aria-label="Primary">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="AUDIT.md by CyberSkill — home">
+      <img src="assets/cyberskill-logo.svg" alt="" width="26" height="32"/>
+      <span><b class="mono">AUDIT.md</b><span class="by">by CyberSkill</span></span>
     </a>
-    <div class="hidden md:flex items-center gap-6 lg:gap-7 text-[14px] text-brown-700">
-      <a href="#what" class="hover:text-brown-900 transition">Introduce</a>
-      <a href="#structure" class="hover:text-brown-900 transition">Structure</a>
-      <a href="#use" class="hover:text-brown-900 transition">Use it</a>
-      <a href="#fine-tune" class="hover:text-brown-900 transition">Fine-tune</a>
-      <a href="#rubric" class="hover:text-brown-900 transition">PE rubric</a>
-    </div>
-    <div class="flex items-center gap-2">
-      <a href="https://github.com/zintaen/code-audit" target="_blank" rel="noopener" aria-label="View on GitHub"
-         class="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-brown-200 hover:border-brown-400 hover:bg-brown-50 text-[13px] text-brown-800 transition">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.38 7.86 10.9.58.1.79-.25.79-.56v-2.04c-3.2.7-3.87-1.37-3.87-1.37-.52-1.32-1.28-1.67-1.28-1.67-1.04-.72.08-.7.08-.7 1.15.08 1.75 1.18 1.75 1.18 1.03 1.76 2.7 1.25 3.36.95.1-.74.4-1.25.72-1.54-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.45.11-3.03 0 0 .97-.31 3.18 1.17a11 11 0 015.8 0c2.2-1.48 3.17-1.17 3.17-1.17.63 1.58.24 2.74.12 3.03.73.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.26 5.65.41.35.78 1.04.78 2.1v3.11c0 .31.2.67.8.56A11.5 11.5 0 0023.5 12c0-6.27-5.23-11.5-11.5-11.5z"/></svg>
-        <span class="hidden lg:inline">GitHub</span>
-      </a>
-      <a href="https://buymeacoffee.com/zintaen" target="_blank" rel="noopener"
-         class="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gold-500 hover:bg-gold-400 text-brown-950 font-bold text-[13px] transition shadow-warm-sm">
-        Support the work
-      </a>
-      <!-- Mobile menu toggle -->
-      <button id="mobile-menu-toggle" type="button" aria-controls="mobile-menu" aria-expanded="false" aria-label="Toggle navigation menu"
-         class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-brown-200 hover:border-brown-400 hover:bg-brown-50 text-brown-800 transition">
-        <svg id="mobile-menu-icon-open" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        <svg id="mobile-menu-icon-close" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="hidden"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-  </div>
-
-  <!-- Mobile menu drawer -->
-  <div id="mobile-menu" class="md:hidden hidden border-t border-brown-100 bg-cream-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col gap-1 text-[15px] text-brown-800">
-      <a href="#what"      class="mobile-nav-link block px-3 py-2.5 rounded-lg hover:bg-brown-50 hover:text-brown-900 transition">01 · Introduce</a>
-      <a href="#structure" class="mobile-nav-link block px-3 py-2.5 rounded-lg hover:bg-brown-50 hover:text-brown-900 transition">02 · Structure</a>
-      <a href="#use"       class="mobile-nav-link block px-3 py-2.5 rounded-lg hover:bg-brown-50 hover:text-brown-900 transition">03 · Use it</a>
-      <a href="#fine-tune" class="mobile-nav-link block px-3 py-2.5 rounded-lg hover:bg-brown-50 hover:text-brown-900 transition">04 · Fine-tune</a>
-      <a href="#rubric"    class="mobile-nav-link block px-3 py-2.5 rounded-lg hover:bg-brown-50 hover:text-brown-900 transition">05 · PE rubric</a>
-      <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-brown-100">
-        <a href="https://github.com/zintaen/code-audit" target="_blank" rel="noopener"
-           class="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-brown-200 text-[13px] text-brown-800 hover:bg-brown-50 transition">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.38 7.86 10.9.58.1.79-.25.79-.56v-2.04c-3.2.7-3.87-1.37-3.87-1.37-.52-1.32-1.28-1.67-1.28-1.67-1.04-.72.08-.7.08-.7 1.15.08 1.75 1.18 1.75 1.18 1.03 1.76 2.7 1.25 3.36.95.1-.74.4-1.25.72-1.54-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.45.11-3.03 0 0 .97-.31 3.18 1.17a11 11 0 015.8 0c2.2-1.48 3.17-1.17 3.17-1.17.63 1.58.24 2.74.12 3.03.73.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.26 5.65.41.35.78 1.04.78 2.1v3.11c0 .31.2.67.8.56A11.5 11.5 0 0023.5 12c0-6.27-5.23-11.5-11.5-11.5z"/></svg>
-          GitHub
-        </a>
-        <a href="https://buymeacoffee.com/zintaen" target="_blank" rel="noopener"
-           class="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gold-500 hover:bg-gold-400 text-brown-950 font-bold text-[13px] transition shadow-warm-sm">
-          Support
-        </a>
-      </div>
-    </div>
+    <ul class="nav-links">
+      <li class="hide-sm"><a href="#problem">Why</a></li>
+      <li class="hide-sm"><a href="#rules">Rules</a></li>
+      <li class="hide-sm"><a href="#how">How it works</a></li>
+      <li class="hide-sm"><a href="#loop">Self-improvement</a></li>
+      <li class="hide-sm"><a href="#partners">Work with us</a></li>
+      <li><a class="btn btn-primary" href="https://github.com/zintaen/prompts" rel="noopener">Get AUDIT.md</a></li>
+    </ul>
   </div>
 </nav>
 
-<script>
-  (function () {
-    var btn = document.getElementById('mobile-menu-toggle');
-    var menu = document.getElementById('mobile-menu');
-    var iconOpen = document.getElementById('mobile-menu-icon-open');
-    var iconClose = document.getElementById('mobile-menu-icon-close');
-    if (!btn || !menu) return;
-    function setOpen(open) {
-      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      menu.classList.toggle('hidden', !open);
-      if (iconOpen && iconClose) {
-        iconOpen.classList.toggle('hidden', open);
-        iconClose.classList.toggle('hidden', !open);
-      }
-    }
-    btn.addEventListener('click', function () {
-      setOpen(menu.classList.contains('hidden'));
-    });
-    // Auto-close on link tap
-    menu.querySelectorAll('a').forEach(function (a) {
-      a.addEventListener('click', function () { setOpen(false); });
-    });
-    // Auto-close if viewport crosses the md breakpoint
-    window.matchMedia('(min-width: 768px)').addEventListener('change', function (e) {
-      if (e.matches) setOpen(false);
-    });
-  })();
-</script>
-
-<!-- HERO -->
-<section id="top" class="relative overflow-hidden bg-brown-900 text-cream-50">
-  <div class="absolute inset-0 tex-glow opacity-80"></div>
-  <div class="absolute -top-20 -right-10 w-[520px] h-[520px] rounded-full bg-gold-500/10 blur-3xl pointer-events-none"></div>
-  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 pt-14 pb-16 sm:pt-20 sm:pb-24 md:pt-32 md:pb-36">
-    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mb-6 eyebrow text-gold-400">
-      <span>The brand system</span>
-      <span class="text-brown-300 hidden sm:inline">·</span>
-      <span class="text-brown-200 text-[11px] sm:text-[12px]">PE 79 / 80 · 40 rules · 8 fixtures · 81 cells</span>
-    </div>
-    <h1 class="hero-title text-cream-50">
-      Audit a repo.<br>
-      Then <span class="text-gold-400">audit the audit.</span>
-    </h1>
-    <p class="mt-8 text-[18px] md:text-[20px] leading-[1.55] text-brown-100 max-w-2xl">
-      <strong class="text-cream-50">AUDIT.md</strong> is a large, opinionated LLM-run codebase auditor — hardened by a regression harness that blocks a merge whenever a previously-passing rule flips to fail. Every edit to the prompt is grounded in a real drift incident, runs through a proposed-edit queue, and is gated by the same discipline the prompt itself enforces on the code it audits.
-    </p>
-
-    <div class="mt-10 flex flex-wrap items-center gap-3">
-      <a href="#what" class="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-gold-500 hover:bg-gold-400 text-brown-950 font-bold text-[15px] transition shadow-warm-md">
-        See how it works
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
-      </a>
-      <a href="#use" class="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-brown-400 hover:border-gold-400 hover:bg-brown-800 text-cream-50 text-[15px] transition">
-        Run it on any project
-      </a>
-      <a href="https://github.com/zintaen/code-audit" target="_blank" rel="noopener"
-         class="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-brown-400 hover:border-gold-400 hover:bg-brown-800 text-cream-50 text-[15px] transition">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.38 7.86 10.9.58.1.79-.25.79-.56v-2.04c-3.2.7-3.87-1.37-3.87-1.37-.52-1.32-1.28-1.67-1.28-1.67-1.04-.72.08-.7.08-.7 1.15.08 1.75 1.18 1.75 1.18 1.03 1.76 2.7 1.25 3.36.95.1-.74.4-1.25.72-1.54-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.45.11-3.03 0 0 .97-.31 3.18 1.17a11 11 0 015.8 0c2.2-1.48 3.17-1.17 3.17-1.17.63 1.58.24 2.74.12 3.03.73.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.26 5.65.41.35.78 1.04.78 2.1v3.11c0 .31.2.67.8.56A11.5 11.5 0 0023.5 12c0-6.27-5.23-11.5-11.5-11.5z"/></svg>
-        View on GitHub
-      </a>
-    </div>
-
-    <!-- Stats -->
-    <div class="mt-10 sm:mt-14 md:mt-16 grid grid-cols-2 md:grid-cols-5 gap-3">
-      <div class="rounded-xl bg-brown-800/70 ring-1 ring-brown-700 p-4 sm:p-5">
-        <div class="text-[26px] sm:text-[32px] font-bold text-cream-50 leading-none">1,898</div>
-        <div class="eyebrow text-brown-300 mt-2">Lines</div>
-      </div>
-      <div class="rounded-xl bg-brown-800/70 ring-1 ring-brown-700 p-4 sm:p-5">
-        <div class="text-[26px] sm:text-[32px] font-bold text-cream-50 leading-none">40</div>
-        <div class="eyebrow text-brown-300 mt-2">Active rules</div>
-      </div>
-      <div class="rounded-xl bg-brown-800/70 ring-1 ring-brown-700 p-4 sm:p-5">
-        <div class="text-[26px] sm:text-[32px] font-bold text-cream-50 leading-none">8</div>
-        <div class="eyebrow text-brown-300 mt-2">Fixtures</div>
-      </div>
-      <div class="rounded-xl bg-brown-800/70 ring-1 ring-brown-700 p-4 sm:p-5">
-        <div class="text-[26px] sm:text-[32px] font-bold text-cream-50 leading-none">81</div>
-        <div class="eyebrow text-brown-300 mt-2">Baseline cells</div>
-      </div>
-      <div class="rounded-xl bg-brown-800/70 ring-1 ring-gold-500/50 p-4 sm:p-5 col-span-2 md:col-span-1">
-        <div class="flex items-baseline gap-1">
-          <span class="text-[26px] sm:text-[32px] font-bold text-gold-400 leading-none">79</span>
-          <span class="text-brown-300 text-base sm:text-lg">/ 80</span>
-        </div>
-        <div class="eyebrow text-brown-300 mt-2">PE rubric</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- WHAT IS AUDIT.MD (INTRODUCE) -->
-<section id="what" class="py-14 md:py-24 border-t border-brown-100">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6">
-    <div class="grid md:grid-cols-2 gap-10 md:gap-14 items-start">
+<main id="main">
+<!-- ================= HERO ================= -->
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="hero-grid">
       <div>
-        <div class="eyebrow text-gold-600 mb-4">01 · Introduce</div>
-        <h2 class="text-[30px] sm:text-[36px] md:text-[52px] leading-[1.05] tracking-tight font-bold text-brown-900 mb-6">What AUDIT.md is.</h2>
-        <div class="space-y-5 text-[16px] leading-[1.6] text-brown-800">
-          <p>AUDIT.md is a <strong>single markdown file</strong> you hand to an LLM (Claude, GPT, Gemini, Copilot, Cursor, Antigravity, Windsurf, Zed — any model, any IDE). The model reads the spec, scans a repo, and writes a structured audit report: findings, severity, evidence, HITL banners, and a resumable state index.</p>
-          <p>It is not a script. It is a <span class="gold font-bold">contract</span> — rules the model must honor, output shape it must conform to, and behaviors it must refuse. Every behavior has a canonical § home, a stable rule_id, and a frozen birth fingerprint so the harness can detect drift.</p>
-          <p>The interesting part is not the prompt. It is <strong>how the prompt is maintained</strong> — a regression harness that blocks a merge whenever a previously-passing rule flips to fail.</p>
+        <span class="badge"><span class="dot" aria-hidden="true"></span> v2.1.1 · evals 15/15 green · AI-agnostic</span>
+        <h1>Your coding agent audits like a pro.<br/><span class="ochre">And it never lies to you.</span></h1>
+        <p class="sub">AUDIT.md is a ~160-line master prompt that turns Claude Code, Cursor, Gemini CLI, or Codex into an evidence-based codebase auditor. Every metric ships with the exact command and its raw output — or an honest <span class="mono">UNMEASURED</span>. No fabricated benchmarks. No padded findings. No fake "done".</p>
+        <p class="slogan">TURN YOUR WILL INTO REAL — HIỆN THỰC HOÁ Ý CHÍ</p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary" href="https://github.com/zintaen/prompts" rel="noopener">Get the protocol →</a>
+          <a class="btn btn-ghost" href="#loop">See it improve itself</a>
         </div>
+        <p class="hero-note">Open source · one Markdown file to adopt · works with any agent that has a shell, git, and file I/O</p>
       </div>
-      <div class="relative">
-        <div class="absolute -inset-4 tex-glow rounded-3xl opacity-60"></div>
-        <div class="relative rounded-2xl bg-brown-50 ring-1 ring-brown-200 shadow-warm-md p-6 sm:p-8">
-          <div class="eyebrow text-brown-600 mb-5">Principles · in one breath</div>
-          <dl class="space-y-5">
-            <div>
-              <dt class="font-bold text-brown-900">01 · Mirror reality.</dt>
-              <dd class="text-[14px] text-brown-700 mt-1">Findings reference real files, real lines, real evidence. No fabrication, no evidence-free claims.</dd>
-            </div>
-            <div>
-              <dt class="font-bold text-brown-900">02 · Closed contracts.</dt>
-              <dd class="text-[14px] text-brown-700 mt-1">Item schema, severity ladder, output layout — closed top-level keys. A drifted shape fails the harness.</dd>
-            </div>
-            <div>
-              <dt class="font-bold text-brown-900">03 · Resumable.</dt>
-              <dd class="text-[14px] text-brown-700 mt-1">A STATE-INDEX plus atomic persistence means a halted audit picks up exactly where it stopped.</dd>
-            </div>
-            <div>
-              <dt class="font-bold text-brown-900">04 · <span class="gold">Protected</span> from weakening.</dt>
-              <dd class="text-[14px] text-brown-700 mt-1">Five anti-gaming rules — the analyzer itself is forbidden from weakening them.</dd>
-            </div>
-          </dl>
+
+      <div class="glass-std term" role="img" aria-label="Terminal transcript of an AUDIT.md run showing evidence-gated metrics">
+        <div class="term-bar">
+          <i style="background:#B42318"></i><i style="background:#F4BA17"></i><i style="background:#166534"></i>
+          <span class="t mono">agent — AUDIT.md v2.1.1 · MODE: gated</span>
         </div>
+        <div class="term-body"><span class="tk-p">▸ PHASE 0</span> — recover state
+<span class="tk-c">$ git log --oneline -3 · docs/BACKLOG.md found · resuming Loop 2</span>
+
+<span class="tk-p">▸ PHASE 1</span> — measure, don't guess
+<span class="tk-c">$ time pytest -q</span>
+20 passed in 13.9s   <span class="tk-g">→ baseline: 14.2s (raw output attached)</span>
+p95 latency          <span class="tk-o">→ UNMEASURED (no load generator in CI)</span>
+
+<span class="tk-p">▸ PHASE 2</span> — backlog written · severity-weighted
+L2-T1 <span class="tk-r">High</span> Testing — parser failure paths uncovered
+<span class="tk-g">⏸ gated: awaiting your line →</span> Approved: L2-T1
+
+<span class="tk-p">▸ PHASE 4</span> — stop decision
+<span class="tk-g">✔ Stop condition (b): 2 consecutive loops, zero findings ≥ High</span>
+<span class="tk-c">HANDOFF.md written · resumable · nothing invented</span></div>
       </div>
     </div>
 
-    <!-- Drift problem block -->
-    <div class="mt-12 md:mt-20 rounded-2xl bg-brown-900 text-cream-50 p-6 sm:p-8 md:p-12 shadow-warm-lg relative overflow-hidden">
-      <div class="absolute inset-0 tex-glow opacity-40"></div>
-      <div class="relative grid md:grid-cols-2 gap-8 md:gap-10">
-        <div>
-          <div class="eyebrow text-gold-400 mb-4">The drift problem</div>
-          <h3 class="text-[22px] sm:text-[26px] md:text-[36px] leading-[1.1] tracking-tight font-bold mb-5">Large prompts rot the moment you edit them.</h3>
-          <div class="space-y-3 text-[15px] leading-[1.6] text-brown-100">
-            <p>A 1,900-line prompt has dozens of behaviors, constraints, and contracts. Change one clause and you might silently weaken three others — especially under a different model or IDE. The only thing worse than a prompt that doesn't work is a prompt that <span class="gold-strong font-bold">used to work</span>.</p>
-            <p>The usual loop ("ask the model, eyeball the diff, ship") has no memory and no regression net. This project is the opposite.</p>
-          </div>
-        </div>
-        <div class="space-y-3">
-          <div class="flex items-start gap-3 rounded-xl bg-brown-800/70 ring-1 ring-terracotta-600/40 p-4">
-            <svg class="mt-0.5 flex-shrink-0 text-terracotta-600" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-            <div>
-              <div class="text-cream-50 font-bold">Silent regressions</div>
-              <div class="text-[13px] text-brown-200 mt-0.5">Edit passes on Claude, breaks on GPT-4 or Gemini — and nobody notices for a week.</div>
-            </div>
-          </div>
-          <div class="flex items-start gap-3 rounded-xl bg-brown-800/70 ring-1 ring-terracotta-600/40 p-4">
-            <svg class="mt-0.5 flex-shrink-0 text-terracotta-600" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-            <div>
-              <div class="text-cream-50 font-bold">Prompt bloat</div>
-              <div class="text-[13px] text-brown-200 mt-0.5">Every incident spawns a new paragraph; nothing gets deleted. Token cost creeps up.</div>
-            </div>
-          </div>
-          <div class="flex items-start gap-3 rounded-xl bg-brown-800/70 ring-1 ring-terracotta-600/40 p-4">
-            <svg class="mt-0.5 flex-shrink-0 text-terracotta-600" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-            <div>
-              <div class="text-cream-50 font-bold">Anti-gaming collapse</div>
-              <div class="text-[13px] text-brown-200 mt-0.5">A "helpful" edit softens the rule that was holding the model honest.</div>
-            </div>
-          </div>
-          <div class="flex items-start gap-3 rounded-xl bg-brown-800/70 ring-1 ring-gold-500/50 p-4">
-            <svg class="mt-0.5 flex-shrink-0 text-gold-400" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            <div>
-              <div class="text-gold-400 font-bold">The answer</div>
-              <div class="text-[13px] text-brown-100 mt-0.5">Three tightly-coupled files, a per-rule pass ledger, a frozen birth fingerprint per rule, a 16-practice PE rubric, and an analyzer that can only propose — never apply.</div>
-            </div>
-          </div>
-        </div>
+    <div class="stats">
+      <div class="stat glass"><b>160<span style="color:#a35c12">↓</span></b><span>lines of protocol</span><span class="mono-sub">v1 was 1,898 — tightness is a feature</span></div>
+      <div class="stat glass"><b>8</b><span>core rules, evidence-first</span><span class="mono-sub">R1–R8, critical rules placed first</span></div>
+      <div class="stat glass"><b>15/15</b><span>regression fixtures green</span><span class="mono-sub">fault-injection traps, stdlib only</span></div>
+      <div class="stat glass"><b>5</b><span>self-improvement cycles run</span><span class="mono-sub">3 releases, stopped by its own rule</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= PROBLEM ================= -->
+<section id="problem">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">The problem</span>
+      <h2>Agents don't fail loudly. They fail <em>convincingly</em>.</h2>
+      <span class="vn">Vấn đề không phải là AI lười — mà là AI nói dối một cách thuyết phục.</span>
+      <p class="lede">Four production runs of our original 150 KB mega-prompt surfaced five failure modes. Research says they're structural: a long ruleset mathematically guarantees dropped rules, and weak verifiers actively <em>teach</em> agents to cheat. v2 re-engineers the prompt around what the evidence supports.</p>
+    </div>
+    <div class="grid grid-2">
+      <div class="card glass fail">
+        <h3><span class="mono-tag">FAILURE 1</span> Reward-hacked metrics</h3>
+        <p>"Verified via static code analysis." A GUI profiler listed as a CLI command. Checkmarks on numbers that were never measured.</p>
+        <p class="fix-line">→ R1: verbatim command + raw output, or <span class="mono">UNMEASURED (reason)</span></p>
+      </div>
+      <div class="card glass fail">
+        <h3><span class="mono-tag">FAILURE 2</span> Fabricated SOTA targets</h3>
+        <p>A metaphysics app "benchmarked" against Palantir and IBM Watsonx — plausible-looking tables, zero real citations.</p>
+        <p class="fix-line">→ R2: cited-with-URL or <span class="mono">INTERNAL TARGET</span> — nothing in between</p>
+      </div>
+      <div class="card glass fail">
+        <h3><span class="mono-tag">FAILURE 3</span> Quota-manufactured findings</h3>
+        <p>"Fewer than 5 deep issues = failure" produced 5 issues on every codebase — including clean ones.</p>
+        <p class="fix-line">→ R7: severity-weighted; "no significant findings" is a valid success</p>
+      </div>
+      <div class="card glass fail">
+        <h3><span class="mono-tag">FAILURE 4</span> Unreachable exit conditions</h3>
+        <p>"Terminate only when ALL metrics match SOTA Top 5" — so every run stopped on a vibe at loop 1–2 instead.</p>
+        <p class="fix-line">→ Phase 4: diminishing-returns stop rule + <span class="mono">LOOP_BUDGET</span> safety net</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- STRUCTURE — TRIPOD + ANATOMY + RULE FAMILIES + FIXTURES -->
-<section id="structure" class="py-14 md:py-24 bg-cream-100 border-y border-brown-100">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6">
-    <div class="max-w-3xl">
-      <div class="eyebrow text-gold-600 mb-4">02 · Structure</div>
-      <h2 class="text-[30px] sm:text-[36px] md:text-[52px] leading-[1.05] tracking-tight font-bold text-brown-900 mb-5">The shape of the spec.</h2>
-      <p class="text-[17px] leading-[1.6] text-brown-800">AUDIT.md is organized into functional zones. Every rule has a <strong>canonical §</strong> that never moves (enforced as PE Practice 1) and a frozen birth fingerprint at rule creation. The harness depends on a three-file tripod that stays consistent or breaks the merge.</p>
+<!-- ================= RULES ================= -->
+<section id="rules">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">The protocol</span>
+      <h2>Eight rules. Evidence first. Honesty has an escape hatch.</h2>
+      <span class="vn">Tám quy tắc — bằng chứng trước, trung thực luôn có lối ra.</span>
+      <p class="lede">The whole protocol fits in one Markdown file: a one-sentence role, a per-project CONFIG block, these core rules, and a six-phase state machine. Short on purpose — instruction-following decays as rule count grows, so every rule here earns its place.</p>
     </div>
-
-    <!-- TRIPOD -->
-    <div class="mt-12 grid md:grid-cols-3 gap-5">
-      <div class="relative rounded-2xl bg-cream-50 ring-1 ring-brown-200 shadow-warm-sm p-6 card">
-        <div class="absolute top-4 right-4 eyebrow text-brown-500">1 / 3</div>
-        <div class="w-10 h-10 rounded-lg bg-brown-900 flex items-center justify-center mb-4">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4BA17" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-        </div>
-        <h3 class="text-[20px] font-bold text-brown-900 font-mono mb-2">AUDIT.md</h3>
-        <p class="text-[14px] leading-[1.55] text-brown-700">The spec — source of truth. Every editable behavior lives here. ~1,900 lines of canonical rules, sections, output contracts, anti-drift requirements.</p>
-        <div class="pt-4 mt-4 border-t border-brown-100 text-[11px] font-mono text-brown-500 break-all">sha256:a3c86e12…</div>
-      </div>
-
-      <div class="relative rounded-2xl bg-cream-50 ring-1 ring-brown-200 shadow-warm-sm p-6 card">
-        <div class="absolute top-4 right-4 eyebrow text-brown-500">2 / 3</div>
-        <div class="w-10 h-10 rounded-lg bg-gold-500 flex items-center justify-center mb-4">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#45210E" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-        </div>
-        <h3 class="text-[20px] font-bold text-brown-900 font-mono mb-2">rule-registry.json</h3>
-        <p class="text-[14px] leading-[1.55] text-brown-700">Every enforceable rule has a stable <code class="text-gold-700 font-mono">rule_id</code>, a canonical § section in AUDIT.md, a <strong>frozen birth fingerprint</strong>, and a list of fixtures that exercise it.</p>
-        <div class="pt-4 mt-4 border-t border-brown-100 text-[11px] font-mono text-brown-500">40 active rules · 6 prefix families</div>
-      </div>
-
-      <div class="relative rounded-2xl bg-cream-50 ring-1 ring-brown-200 shadow-warm-sm p-6 card">
-        <div class="absolute top-4 right-4 eyebrow text-brown-500">3 / 3</div>
-        <div class="w-10 h-10 rounded-lg bg-brown-700 flex items-center justify-center mb-4">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4BA17" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
-        </div>
-        <h3 class="text-[20px] font-bold text-brown-900 font-mono mb-2">baseline.json</h3>
-        <p class="text-[14px] leading-[1.55] text-brown-700">Per-cell (<code class="text-gold-700 font-mono">fixture × model × IDE</code>) pass/fail ledger at the current fingerprint. Plus the 16-practice PE rubric score and a prior-scores history chain.</p>
-        <div class="pt-4 mt-4 border-t border-brown-100 text-[11px] font-mono text-brown-500">81 cells · PE 79/80 · rule-survival invariant</div>
-      </div>
-    </div>
-
-    <!-- Coupling diagram -->
-    <div class="mt-8 rounded-2xl bg-cream-50 ring-1 ring-brown-200 shadow-warm-sm p-5 sm:p-8">
-      <div class="eyebrow text-brown-600 mb-5">How they couple</div>
-      <svg viewBox="0 0 900 300" class="w-full h-auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Coupling diagram showing AUDIT.md registering rules into rule-registry.json and exercising them via baseline.json, both read by coverage-sweep.py as the integrity gate">
-        <defs>
-          <marker id="arrow-brown" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#71401F"/>
-          </marker>
-          <marker id="arrow-gold" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#E2AC13"/>
-          </marker>
-        </defs>
-
-        <!-- Boxes -->
-        <g>
-          <rect x="30" y="110" width="200" height="80" rx="12" fill="#45210E" stroke="#71401F" stroke-width="1.5"/>
-          <text x="130" y="145" text-anchor="middle" fill="#FBF7EF" font-family="JetBrains Mono, monospace" font-size="15" font-weight="700">AUDIT.md</text>
-          <text x="130" y="168" text-anchor="middle" fill="#D4A884" font-family="JetBrains Mono, monospace" font-size="11">the spec</text>
-        </g>
-        <g>
-          <rect x="340" y="30" width="220" height="80" rx="12" fill="#FEF9EA" stroke="#E2AC13" stroke-width="1.5"/>
-          <text x="450" y="65" text-anchor="middle" fill="#45210E" font-family="JetBrains Mono, monospace" font-size="15" font-weight="700">rule-registry.json</text>
-          <text x="450" y="88" text-anchor="middle" fill="#8A6508" font-family="JetBrains Mono, monospace" font-size="11">rule_id ↔ § ↔ birth fp</text>
-        </g>
-        <g>
-          <rect x="340" y="190" width="220" height="80" rx="12" fill="#FAF2E6" stroke="#71401F" stroke-width="1.5"/>
-          <text x="450" y="225" text-anchor="middle" fill="#45210E" font-family="JetBrains Mono, monospace" font-size="15" font-weight="700">baseline.json</text>
-          <text x="450" y="248" text-anchor="middle" fill="#71401F" font-family="JetBrains Mono, monospace" font-size="11">fixture × model × IDE × rule</text>
-        </g>
-        <g>
-          <rect x="670" y="110" width="210" height="80" rx="12" fill="#F4BA17" stroke="#E2AC13" stroke-width="1.5"/>
-          <text x="775" y="138" text-anchor="middle" fill="#45210E" font-family="JetBrains Mono, monospace" font-size="13" font-weight="700">coverage-sweep.py</text>
-          <text x="775" y="158" text-anchor="middle" fill="#5A2E15" font-family="JetBrains Mono, monospace" font-size="11">integrity gate</text>
-          <text x="775" y="176" text-anchor="middle" fill="#5A2E15" font-family="JetBrains Mono, monospace" font-size="11">PROBLEMS: none</text>
-        </g>
-
-        <!-- Arrows -->
-        <!-- AUDIT.md → rule-registry.json (curves up) -->
-        <path d="M 230 130 Q 285 85 340 70" stroke="#71401F" stroke-width="1.75" fill="none" marker-end="url(#arrow-brown)"/>
-        <!-- AUDIT.md → baseline.json (curves down) -->
-        <path d="M 230 170 Q 285 215 340 230" stroke="#71401F" stroke-width="1.75" fill="none" marker-end="url(#arrow-brown)"/>
-        <!-- rule-registry.json → baseline.json (vertical) -->
-        <path d="M 450 110 L 450 190" stroke="#E2AC13" stroke-width="1.75" fill="none" marker-end="url(#arrow-gold)"/>
-        <!-- rule-registry.json → coverage-sweep.py (dashed) -->
-        <path d="M 560 75 Q 615 90 670 135" stroke="#71401F" stroke-width="1.5" fill="none" marker-end="url(#arrow-brown)" stroke-dasharray="4,3"/>
-        <!-- baseline.json → coverage-sweep.py (dashed) -->
-        <path d="M 560 225 Q 615 210 670 165" stroke="#71401F" stroke-width="1.5" fill="none" marker-end="url(#arrow-brown)" stroke-dasharray="4,3"/>
-
-        <!-- Edge labels (positioned in clear space, never overlapping boxes or each other) -->
-        <text x="285" y="100" text-anchor="middle" fill="#71401F" font-family="JetBrains Mono, monospace" font-size="11">registers</text>
-        <text x="285" y="207" text-anchor="middle" fill="#71401F" font-family="JetBrains Mono, monospace" font-size="11">exercises</text>
-        <text x="462" y="154" text-anchor="start" fill="#8A6508" font-family="JetBrains Mono, monospace" font-size="11">feeds</text>
-        <text x="615" y="82" text-anchor="middle" fill="#8A5530" font-family="JetBrains Mono, monospace" font-size="11">reads</text>
-        <text x="615" y="226" text-anchor="middle" fill="#8A5530" font-family="JetBrains Mono, monospace" font-size="11">reads</text>
-      </svg>
-    </div>
-
-    <!-- ANATOMY -->
-    <div class="mt-20">
-      <div class="eyebrow text-gold-600 mb-3">AUDIT.md anatomy</div>
-      <h3 class="text-[22px] sm:text-[26px] md:text-[36px] leading-[1.1] tracking-tight font-bold text-brown-900 mb-3">What lives in the spec.</h3>
-      <p class="text-[15px] text-brown-700 max-w-2xl">Each rule has a canonical home that never moves, and a frozen birth § at rule creation.</p>
-
-      <div class="mt-8 grid md:grid-cols-2 gap-4">
-        <!-- tile -->
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="flex items-center gap-3 mb-2">
-            <span class="font-mono text-[11px] font-bold text-brown-950 bg-gold-300 px-2 py-0.5 rounded">§ROLE</span>
-            <h4 class="text-brown-900 font-bold">Role + objective</h4>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]">Single paragraph defining the auditor's stance, default mode, and refusal contract.</p>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="flex items-center gap-3 mb-2">
-            <span class="font-mono text-[11px] font-bold text-brown-950 bg-gold-300 px-2 py-0.5 rounded">§3 Anti-drift</span>
-            <h4 class="text-brown-900 font-bold">26 R-rules</h4>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]">Findings must mirror reality. No fabrication, no evidence-free claims, no category-mass-nulling, no helper scripts.</p>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="flex items-center gap-3 mb-2">
-            <span class="font-mono text-[11px] font-bold text-brown-950 bg-gold-300 px-2 py-0.5 rounded">§ITEM SCHEMA</span>
-            <h4 class="text-brown-900 font-bold">Closed key set</h4>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]">Every finding item conforms to a closed top-level key schema with required fields and typed severity ladder.</p>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="flex items-center gap-3 mb-2">
-            <span class="font-mono text-[11px] font-bold text-brown-950 bg-gold-300 px-2 py-0.5 rounded">§OUTPUT CONTRACT</span>
-            <h4 class="text-brown-900 font-bold">Daily report layout</h4>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]">Frontmatter, summary totals, findings list, STATE-INDEX reference — exact shape, no drift.</p>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="flex items-center gap-3 mb-2">
-            <span class="font-mono text-[11px] font-bold text-brown-950 bg-gold-300 px-2 py-0.5 rounded">§Step 0–8</span>
-            <h4 class="text-brown-900 font-bold">Scan procedure</h4>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]">Step-by-step of how the auditor traverses a repo, with a self-conformance checkpoint at Step 7.5.</p>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-terracotta-600/40 p-5 card">
-          <div class="flex items-center gap-3 mb-2">
-            <span class="font-mono text-[11px] font-bold text-cream-50 bg-terracotta-600 px-2 py-0.5 rounded">§Step 7.5c</span>
-            <h4 class="text-brown-900 font-bold">Anti-gaming (X-rules)</h4>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]">Five protected items the analyzer is forbidden from weakening: null-finding warning, no mass-null, no-deletion-to-pass, files_scanned honesty, atomic persist.</p>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="flex items-center gap-3 mb-2">
-            <span class="font-mono text-[11px] font-bold text-brown-950 bg-gold-300 px-2 py-0.5 rounded">§EVIDENCE</span>
-            <h4 class="text-brown-900 font-bold">Redaction contract</h4>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]">Secrets, tokens, emails, usernames in paths — all redacted before a finding quotes an excerpt.</p>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="flex items-center gap-3 mb-2">
-            <span class="font-mono text-[11px] font-bold text-brown-950 bg-gold-300 px-2 py-0.5 rounded">§13 HITL</span>
-            <h4 class="text-brown-900 font-bold">Human-in-the-loop banner</h4>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]">The auditor surfaces high-risk findings behind a HITL banner before acting autonomously.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- RULE FAMILIES -->
-    <div class="mt-20">
-      <div class="eyebrow text-gold-600 mb-3">Rule families</div>
-      <h3 class="text-[22px] sm:text-[26px] md:text-[36px] leading-[1.1] tracking-tight font-bold text-brown-900 mb-3">40 active rules. Six families.</h3>
-      <p class="text-[15px] text-brown-700 max-w-2xl">Each rule carries a stable <code class="font-mono text-gold-700">rule_id</code>, a frozen <code class="font-mono text-gold-700">audit_md_version_at_creation</code>, and a canonical § that can move without renaming the rule. The prefix tells you which family protects what.</p>
-
-      <div class="mt-8 grid md:grid-cols-2 gap-4">
-        <div class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6 card">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-3">
-              <span class="w-9 h-9 rounded-lg bg-brown-900 text-gold-400 font-mono font-bold flex items-center justify-center">R-</span>
-              <h4 class="text-brown-900 font-bold">Anti-drift</h4>
-            </div>
-            <div class="text-[28px] font-bold text-brown-900">26</div>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]">From §CRITICAL ANTI-DRIFT RULES. Findings mirror reality — no fabrication, no unevidenced claims, closed top-level keys, bare-array state index, no helper-scripts workaround, evidence cited on invariants.</p>
-        </div>
-
-        <div class="rounded-2xl bg-cream-50 ring-1 ring-terracotta-600/40 p-6 card">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-3">
-              <span class="w-9 h-9 rounded-lg bg-terracotta-600 text-cream-50 font-mono font-bold flex items-center justify-center">X-</span>
-              <h4 class="text-brown-900 font-bold">Anti-gaming</h4>
-            </div>
-            <div class="text-[28px] font-bold text-terracotta-600">5</div>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]"><strong class="text-terracotta-600">Protected from analyzer weakening</strong> (ANALYZER.md HARD RULE 4). Null-finding warning quality, no category-mass-null, no-deletion-to-pass, files_scanned honesty, atomic persist.</p>
-        </div>
-
-        <div class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6 card">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-3">
-              <span class="w-9 h-9 rounded-lg bg-gold-500 text-brown-950 font-mono font-bold flex items-center justify-center">S-</span>
-              <h4 class="text-brown-900 font-bold">Schema</h4>
-            </div>
-            <div class="text-[28px] font-bold text-gold-700">4</div>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]">From §ITEM SCHEMA, §DAILY REPORT LAYOUT, §STATE FILES. Closed key sets, required fields, typed severity ladders.</p>
-        </div>
-
-        <div class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6 card">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-3">
-              <span class="w-9 h-9 rounded-lg bg-ochre-600 text-cream-50 font-mono font-bold flex items-center justify-center">P-</span>
-              <h4 class="text-brown-900 font-bold">Procedure</h4>
-            </div>
-            <div class="text-[28px] font-bold text-ochre-600">1</div>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]">From §SCAN PROCEDURE Steps 0–8 and §Step 7.5 self-conformance items. The how-the-auditor-moves-through-the-repo rules.</p>
-        </div>
-
-        <div class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6 card">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-3">
-              <span class="w-9 h-9 rounded-lg bg-olive-600 text-cream-50 font-mono font-bold flex items-center justify-center">O-</span>
-              <h4 class="text-brown-900 font-bold">Output</h4>
-            </div>
-            <div class="text-[28px] font-bold text-olive-600">2</div>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]">From §OUTPUT CONTRACT, §INVOCATION, §OPERATING MODES. The shape of the daily report and mode switches.</p>
-        </div>
-
-        <div class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6 card">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-3">
-              <span class="w-9 h-9 rounded-lg bg-info-600 text-cream-50 font-mono font-bold flex items-center justify-center">C-</span>
-              <h4 class="text-brown-900 font-bold">Configuration</h4>
-            </div>
-            <div class="text-[28px] font-bold text-info-600">2</div>
-          </div>
-          <p class="text-[13px] text-brown-700 leading-[1.55]">From §CONFIG, §BUDGETS, §CONFIGURATION. Customizable variables externalized via <code class="font-mono text-gold-700">.audit/config.yaml</code>.</p>
-        </div>
-      </div>
-
-      <!-- Family bar -->
-      <div class="mt-8 rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6">
-        <div class="eyebrow text-brown-600 mb-4">Family distribution</div>
-        <div class="flex rounded-lg overflow-hidden h-4 mb-3 ring-1 ring-brown-200">
-          <div style="width:65%"   class="bg-brown-900"      title="R- (26)"></div>
-          <div style="width:12.5%" class="bg-terracotta-600" title="X- (5)"></div>
-          <div style="width:10%"   class="bg-gold-500"       title="S- (4)"></div>
-          <div style="width:2.5%"  class="bg-ochre-600"      title="P- (1)"></div>
-          <div style="width:5%"    class="bg-olive-600"      title="O- (2)"></div>
-          <div style="width:5%"    class="bg-info-600"       title="C- (2)"></div>
-        </div>
-        <div class="flex flex-wrap gap-x-6 gap-y-2 text-[12px] text-brown-700 font-mono">
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-brown-900"></span>R- 26</span>
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-terracotta-600"></span>X- 5</span>
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-gold-500"></span>S- 4</span>
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-ochre-600"></span>P- 1</span>
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-olive-600"></span>O- 2</span>
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-info-600"></span>C- 2</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- FIXTURES -->
-    <div class="mt-20">
-      <div class="eyebrow text-gold-600 mb-3">Fixtures</div>
-      <h3 class="text-[22px] sm:text-[26px] md:text-[36px] leading-[1.1] tracking-tight font-bold text-brown-900 mb-3">Eight deterministic fixtures.</h3>
-      <p class="text-[15px] text-brown-700 max-w-2xl">Each fixture is a tiny representative repo, a prompt template, and a list of rules it exercises. Deterministic so re-runs don't introduce noise. Cross-product with models and IDEs gives 81 baseline cells.</p>
-
-      <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="font-mono text-[11px] font-bold text-gold-700 mb-1">F001</div>
-          <div class="text-brown-900 font-bold mb-1.5">First-pass audit</div>
-          <div class="text-[12px] text-brown-700 leading-[1.55]">Cold run on a fresh repo — exercises the full Step 0–8 procedure.</div>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="font-mono text-[11px] font-bold text-gold-700 mb-1">F002</div>
-          <div class="text-brown-900 font-bold mb-1.5">Resume existing</div>
-          <div class="text-[12px] text-brown-700 leading-[1.55]">Re-enters a partially-audited repo; respects STATE-INDEX and the resume protocol.</div>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="font-mono text-[11px] font-bold text-gold-700 mb-1">F003</div>
-          <div class="text-brown-900 font-bold mb-1.5">Redaction</div>
-          <div class="text-[12px] text-brown-700 leading-[1.55]">Secrets, tokens, emails, and user-path leaks inline in code — verifies redaction.</div>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="font-mono text-[11px] font-bold text-gold-700 mb-1">F004</div>
-          <div class="text-brown-900 font-bold mb-1.5">Null-finding honesty</div>
-          <div class="text-[12px] text-brown-700 leading-[1.55]">A clean repo — the auditor must emit <strong>no findings</strong>, not fabricate low-severity filler.</div>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="font-mono text-[11px] font-bold text-gold-700 mb-1">F005</div>
-          <div class="text-brown-900 font-bold mb-1.5">Schema conformance</div>
-          <div class="text-[12px] text-brown-700 leading-[1.55]">Stress tests §ITEM SCHEMA — closed keys, required fields, severity ladder.</div>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-gold-500/60 p-5 card">
-          <div class="font-mono text-[11px] font-bold text-gold-700 mb-1">F006</div>
-          <div class="text-brown-900 font-bold mb-1.5">Cross-model drift</div>
-          <div class="text-[12px] text-brown-700 leading-[1.55]">Surfaces differences across GPT / Claude / Gemini. PE Practice 5 lives here.</div>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="font-mono text-[11px] font-bold text-gold-700 mb-1">F007</div>
-          <div class="text-brown-900 font-bold mb-1.5">Anti-gaming</div>
-          <div class="text-[12px] text-brown-700 leading-[1.55]">Tempts the model to mass-null or delete findings to pass. Exercises X-rules.</div>
-        </div>
-        <div class="rounded-xl bg-cream-50 ring-1 ring-brown-200 p-5 card">
-          <div class="font-mono text-[11px] font-bold text-gold-700 mb-1">F008</div>
-          <div class="text-brown-900 font-bold mb-1.5">Worked examples</div>
-          <div class="text-[12px] text-brown-700 leading-[1.55]">Validates paired WRONG/RIGHT examples guide model output (PE Practice 6).</div>
-        </div>
-      </div>
+    <div class="grid grid-4">
+      <div class="card glass"><h3><span class="rule-num">R1</span> Evidence or nothing</h3><p>Every metric pastes the exact command and raw output — each one traceable to <span class="mono">$ &lt;verify command&gt;</span>. Can't measure it? Say <span class="mono">UNMEASURED</span>. Guessing is banned; honesty isn't.</p></div>
+      <div class="card glass"><h3><span class="rule-num">R2</span> Honest targets only</h3><p>A real number with a working URL, or <span class="mono">INTERNAL TARGET</span>. "Industry-leading", "Minimal", "Strict" — banned words, not targets.</p></div>
+      <div class="card glass"><h3><span class="rule-num">R3</span> Protect the core</h3><p>Protected areas, public API contracts, and business logic stay behavior-preserving. Destructive actions stop and ask.</p></div>
+      <div class="card glass"><h3><span class="rule-num">R4</span> Files are memory</h3><p>Multi-session by design: the backlog and git history are the only memory. Resumes are idempotent — finished work is never restarted.</p></div>
+      <div class="card glass"><h3><span class="rule-num">R5</span> One task at a time</h3><p>Mark IN-PROGRESS → implement → re-run the task's own verify command → DONE or BLOCKED. Closed status sets, atomic commits.</p></div>
+      <div class="card glass"><h3><span class="rule-num">R6</span> Circuit breaker</h3><p>Three failed validations → revert, mark <span class="mono">BLOCKED</span> with a root cause, move on. No thrashing, no death spirals.</p></div>
+      <div class="card glass"><h3><span class="rule-num">R7</span> No finding quotas</h3><p>Critical / High / Medium / Low — real issues only. A clean codebase yields "no significant findings", and that's a pass.</p></div>
+      <div class="card glass"><h3><span class="rule-num">R8</span> Secrets stay secret</h3><p>Credentials in any output become <span class="mono">[REDACTED:&lt;kind&gt;]</span>. Proven by a fault-injection trap that plants real-looking keys.</p></div>
     </div>
   </div>
 </section>
 
-<!-- USE IT — HOW TO AUDIT ANY PROJECT -->
-<section id="use" class="py-14 md:py-24 border-t border-brown-100">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6">
-    <div class="max-w-3xl">
-      <div class="eyebrow text-gold-600 mb-4">03 · Use it</div>
-      <h2 class="text-[30px] sm:text-[36px] md:text-[52px] leading-[1.05] tracking-tight font-bold text-brown-900 mb-5">Run it on any project.</h2>
-      <p class="text-[17px] leading-[1.6] text-brown-800">AUDIT.md is model-agnostic and IDE-agnostic. Hand the spec to any reasonably capable LLM, point it at a repo, invoke one of three modes, and read the report. The spec handles the rest — state files, resumption, HITL banners, evidence redaction.</p>
+<!-- ================= HOW IT WORKS ================= -->
+<section id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2>Six phases, two modes, one honest handoff.</h2>
+      <span class="vn">Sáu giai đoạn — hai chế độ — một bản bàn giao trung thực.</span>
+      <p class="lede">Fill the CONFIG block (the only part that changes per project), paste the file into your agent, and say "Begin at PHASE 0". Choose <span class="mono">gated</span> to approve every task yourself, or <span class="mono">autonomous</span> for sandboxes and CI.</p>
     </div>
-
-    <!-- 3-step flow -->
-    <div class="mt-12 grid md:grid-cols-3 gap-5">
-      <div class="relative rounded-2xl bg-cream-50 ring-1 ring-brown-200 shadow-warm-sm p-6 card">
-        <div class="absolute -top-3 -left-2 w-9 h-9 rounded-full bg-gold-500 text-brown-950 font-mono text-[15px] font-bold flex items-center justify-center ring-4 ring-cream-50">1</div>
-        <div class="pt-3">
-          <h4 class="text-brown-900 font-bold text-[18px] mb-2">Attach the spec</h4>
-          <p class="text-[13px] text-brown-700 leading-[1.55] mb-4">Drop <code class="font-mono text-gold-700">AUDIT.md</code> into your IDE context (Cursor, Antigravity, Claude desktop, Copilot, Cline, Continue, Windsurf, Zed) — or paste it into a chat turn. Attach the repo root alongside.</p>
-          <div class="text-[11px] font-mono text-brown-500">~150 KB · one file · no deps</div>
-        </div>
-      </div>
-      <div class="relative rounded-2xl bg-cream-50 ring-1 ring-brown-200 shadow-warm-sm p-6 card">
-        <div class="absolute -top-3 -left-2 w-9 h-9 rounded-full bg-gold-500 text-brown-950 font-mono text-[15px] font-bold flex items-center justify-center ring-4 ring-cream-50">2</div>
-        <div class="pt-3">
-          <h4 class="text-brown-900 font-bold text-[18px] mb-2">Pick a mode</h4>
-          <p class="text-[13px] text-brown-700 leading-[1.55] mb-4">First-pass, resume, or targeted scope. The spec reads the <code class="font-mono text-gold-700">.audit/</code> folder at repo root and picks up where the last run stopped.</p>
-          <div class="text-[11px] font-mono text-brown-500">first-pass · resume · scoped</div>
-        </div>
-      </div>
-      <div class="relative rounded-2xl bg-cream-50 ring-1 ring-brown-200 shadow-warm-sm p-6 card">
-        <div class="absolute -top-3 -left-2 w-9 h-9 rounded-full bg-gold-500 text-brown-950 font-mono text-[15px] font-bold flex items-center justify-center ring-4 ring-cream-50">3</div>
-        <div class="pt-3">
-          <h4 class="text-brown-900 font-bold text-[18px] mb-2">Read the report</h4>
-          <p class="text-[13px] text-brown-700 leading-[1.55] mb-4">Output lands in <code class="font-mono text-gold-700">.audit/AUDIT-&lt;date&gt;.md</code>. Findings are typed, evidenced, and redacted. HITL banners gate high-risk items.</p>
-          <div class="text-[11px] font-mono text-brown-500">frontmatter · findings · STATE-INDEX</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Invocation examples -->
-    <div class="mt-12 grid lg:grid-cols-2 gap-5">
-      <div class="rounded-2xl bg-brown-900 p-1 shadow-warm-md">
-        <div class="px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-brown-800">
-          <div class="eyebrow text-gold-400">First-pass audit</div>
-          <div class="font-mono text-[11px] text-brown-300">claude / cursor / any IDE</div>
-        </div>
-<pre class="code !rounded-t-none !border-0"><span class="c-comment"># In your IDE, with AUDIT.md and the repo in context:</span>
-<span class="c-cmd">Run AUDIT.md in first-pass mode on this repo.</span>
-<span class="c-cmd">Write the report to .audit/AUDIT-$(date -u +%Y-%m-%d).md</span>
-<span class="c-cmd">and the state files to .audit/STATE-INDEX.md.</span>
-<span class="c-cmd">Stop at the first HITL banner for my approval.</span></pre>
-      </div>
-
-      <div class="rounded-2xl bg-brown-900 p-1 shadow-warm-md">
-        <div class="px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-brown-800">
-          <div class="eyebrow text-gold-400">Resume existing</div>
-          <div class="font-mono text-[11px] text-brown-300">picks up mid-audit</div>
-        </div>
-<pre class="code !rounded-t-none !border-0"><span class="c-comment"># AUDIT.md honors its own resume contract:</span>
-<span class="c-cmd">Resume the audit from .audit/STATE-INDEX.md.</span>
-<span class="c-cmd">Skip files already marked done; continue from</span>
-<span class="c-cmd">the in-progress file at the recorded offset.</span>
-<span class="c-cmd">Append to today's report, do not overwrite.</span></pre>
-      </div>
-
-      <div class="rounded-2xl bg-brown-900 p-1 shadow-warm-md">
-        <div class="px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-brown-800">
-          <div class="eyebrow text-gold-400">Scoped scan</div>
-          <div class="font-mono text-[11px] text-brown-300">one directory · one rule family</div>
-        </div>
-<pre class="code !rounded-t-none !border-0"><span class="c-comment"># Narrow the scope with §CONFIG overrides:</span>
-<span class="c-cmd">Apply AUDIT.md to src/auth/ only.</span>
-<span class="c-cmd">Filter findings to severity &gt;= medium</span>
-<span class="c-cmd">and categories: [secrets, evidence-redaction].</span>
-<span class="c-cmd">Output inline; do not write state files.</span></pre>
-      </div>
-
-      <div class="rounded-2xl bg-gold-500 p-1 shadow-warm-md">
-        <div class="px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-gold-600">
-          <div class="eyebrow text-brown-950">Verify the harness</div>
-          <div class="font-mono text-[11px] text-brown-900">once, at repo root</div>
-        </div>
-<pre class="code !rounded-t-none !border-0"><span class="c-comment"># Confirm the spec and harness are in sync:</span>
-<span class="c-cmd">shasum -a 256 AUDIT.md</span>
-<span class="c-comment"># Expect the fingerprint baked into baseline.json</span>
-
-<span class="c-cmd">python3 fine-tune/evals/scripts/coverage-sweep.py</span>
-<span class="c-comment"># Expected last line:</span>
-<span class="c-comment"># PROBLEMS: none — baseline and registry consistent.</span></pre>
-      </div>
-    </div>
-
-    <!-- Outputs -->
-    <div class="mt-12 rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-5 sm:p-8 shadow-warm-sm">
-      <div class="eyebrow text-brown-600 mb-5">What the auditor produces</div>
-      <div class="grid md:grid-cols-4 gap-4">
-        <div>
-          <div class="w-9 h-9 rounded-lg bg-brown-900 flex items-center justify-center mb-3">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#F4BA17" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          </div>
-          <div class="text-brown-900 font-bold text-[15px] mb-1">AUDIT-&lt;date&gt;.md</div>
-          <div class="text-[12px] text-brown-700 leading-[1.5]">Frontmatter + summary totals + findings list + a link to the state index.</div>
-        </div>
-        <div>
-          <div class="w-9 h-9 rounded-lg bg-brown-900 flex items-center justify-center mb-3">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#F4BA17" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
-          </div>
-          <div class="text-brown-900 font-bold text-[15px] mb-1">STATE-INDEX.md</div>
-          <div class="text-[12px] text-brown-700 leading-[1.5]">Bare-array state file that makes the audit resumable without re-scanning.</div>
-        </div>
-        <div>
-          <div class="w-9 h-9 rounded-lg bg-brown-900 flex items-center justify-center mb-3">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#F4BA17" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          </div>
-          <div class="text-brown-900 font-bold text-[15px] mb-1">HITL banners</div>
-          <div class="text-[12px] text-brown-700 leading-[1.5]">High-risk findings pause for human approval before any action.</div>
-        </div>
-        <div>
-          <div class="w-9 h-9 rounded-lg bg-brown-900 flex items-center justify-center mb-3">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#F4BA17" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <div class="text-brown-900 font-bold text-[15px] mb-1">Typed severity</div>
-          <div class="text-[12px] text-brown-700 leading-[1.5]">A closed ladder — info · low · medium · high · critical — no freeform tags.</div>
-        </div>
-      </div>
+    <div class="phases">
+      <div class="phase glass"><span class="n">0</span><div><h3>Recover state</h3><p><span class="mono">git log</span> + <span class="mono">docs/BACKLOG.md</span> — resume exactly where the last session stopped, or start Loop 1.</p></div></div>
+      <div class="phase glass"><span class="n">1</span><div><h3>Scope &amp; measure</h3><p>Audit vectors calibrated to the project. Baselines captured with real commands and raw output — or honestly labeled <span class="mono">UNMEASURED</span>.</p></div></div>
+      <div class="phase glass"><span class="n">2</span><div><h3>Write the backlog</h3><p>Benchmark table + severity-tagged task table, deduplicated against all prior loops.</p><span class="gate">gated mode: pauses here — you write <span class="mono">Approved: L1-T1, L1-T3</span> into the backlog; the approval survives across sessions</span></div></div>
+      <div class="phase glass"><span class="n">3</span><div><h3>Execute, one task at a time</h3><p>Minimal change → re-run that task's verify command → paste output → atomic commit. Three strikes → revert + BLOCKED with root cause.</p></div></div>
+      <div class="phase glass"><span class="n">4</span><div><h3>Stop for a real reason</h3><p>Budget reached, two consecutive empty loops, or everything DONE/BLOCKED. Cited explicitly — never "felt finished".</p></div></div>
+      <div class="phase glass"><span class="n">5</span><div><h3>Handoff</h3><p><span class="mono">docs/HANDOFF.md</span>: metrics with deltas and evidence, debt, blocked items, and an exact resume protocol for the next session.</p></div></div>
     </div>
   </div>
 </section>
 
-<!-- FINE-TUNE — MECHANISM + GUIDE -->
-<section id="fine-tune" class="py-14 md:py-24 bg-brown-900 text-cream-50 border-y border-brown-950 relative overflow-hidden">
-  <div class="absolute inset-0 tex-dots opacity-10"></div>
-  <div class="relative max-w-7xl mx-auto px-4 sm:px-6">
-    <div class="max-w-3xl">
-      <div class="eyebrow text-gold-400 mb-4">04 · Fine-tune</div>
-      <h2 class="text-[30px] sm:text-[36px] md:text-[52px] leading-[1.05] tracking-tight font-bold text-cream-50 mb-5">How an edit gets through.</h2>
-      <p class="text-[17px] leading-[1.6] text-brown-100">Every edit follows a seven-stage gauntlet. The analyzer can only <strong>propose</strong> — never apply. A human flips <code class="font-mono text-gold-400">PROPOSED → ACCEPTED</code>. Regression runs first, baseline mutations are atomic, and the PE rubric pressure-tests the result.</p>
+<!-- ================= SELF-IMPROVEMENT ================= -->
+<section id="loop">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">The differentiator</span>
+      <h2>A prompt that ships with its own improvement system.</h2>
+      <span class="vn">Một giao thức tự hoàn thiện — có bằng chứng, có phiên bản, có kiểm định.</span>
+      <p class="lede">The prompt is treated like production software: semantic versions, one evidenced change per release, a 10-question retrospective, a failure log with a Rule-of-Three promotion bar, and a fault-injection regression harness that blocks any edit that weakens a rule. There's no cap on cycles — only a diminishing-returns stop rule.</p>
     </div>
-
-    <!-- 7-step flow -->
-    <div class="mt-14 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3">
-      <div class="rounded-xl bg-brown-800 ring-1 ring-brown-700 p-5 card relative">
-        <div class="absolute -top-3 left-4 w-8 h-8 rounded-full bg-gold-500 text-brown-950 font-mono text-[13px] font-bold flex items-center justify-center ring-4 ring-brown-900">1</div>
-        <div class="text-cream-50 font-bold text-[14px] mt-4 mb-1">Scan capture</div>
-        <div class="text-[11px] text-brown-300 leading-[1.5]">Run a fixture — or a real audit — record the output.</div>
-      </div>
-      <div class="rounded-xl bg-brown-800 ring-1 ring-brown-700 p-5 card relative">
-        <div class="absolute -top-3 left-4 w-8 h-8 rounded-full bg-gold-500 text-brown-950 font-mono text-[13px] font-bold flex items-center justify-center ring-4 ring-brown-900">2</div>
-        <div class="text-cream-50 font-bold text-[14px] mt-4 mb-1">Analyzer</div>
-        <div class="text-[11px] text-brown-300 leading-[1.5]">Read-only meta-prompt clusters drift and emits PROPOSED-EDITS.</div>
-      </div>
-      <div class="rounded-xl bg-brown-800 ring-1 ring-gold-500/60 p-5 card relative">
-        <div class="absolute -top-3 left-4 w-8 h-8 rounded-full bg-gold-400 text-brown-950 font-mono text-[13px] font-bold flex items-center justify-center ring-4 ring-brown-900">3</div>
-        <div class="text-cream-50 font-bold text-[14px] mt-4 mb-1">Human review</div>
-        <div class="text-[11px] text-brown-200 leading-[1.5]">Approve / reject / defer. X-rules never weaken.</div>
-      </div>
-      <div class="rounded-xl bg-brown-800 ring-1 ring-brown-700 p-5 card relative">
-        <div class="absolute -top-3 left-4 w-8 h-8 rounded-full bg-gold-500 text-brown-950 font-mono text-[13px] font-bold flex items-center justify-center ring-4 ring-brown-900">4</div>
-        <div class="text-cream-50 font-bold text-[14px] mt-4 mb-1">Apply + refingerprint</div>
-        <div class="text-[11px] text-brown-300 leading-[1.5]">Patch AUDIT.md, bump sha256, update companion pin.</div>
-      </div>
-      <div class="rounded-xl bg-brown-800 ring-1 ring-brown-700 p-5 card relative">
-        <div class="absolute -top-3 left-4 w-8 h-8 rounded-full bg-gold-500 text-brown-950 font-mono text-[13px] font-bold flex items-center justify-center ring-4 ring-brown-900">5</div>
-        <div class="text-cream-50 font-bold text-[14px] mt-4 mb-1">Re-run fixtures</div>
-        <div class="text-[11px] text-brown-300 leading-[1.5]">Especially F007 + F008; capture per-rule pass/fail.</div>
-      </div>
-      <div class="rounded-xl bg-brown-800 ring-1 ring-brown-700 p-5 card relative">
-        <div class="absolute -top-3 left-4 w-8 h-8 rounded-full bg-gold-500 text-brown-950 font-mono text-[13px] font-bold flex items-center justify-center ring-4 ring-brown-900">6</div>
-        <div class="text-cream-50 font-bold text-[14px] mt-4 mb-1">Coverage-sweep</div>
-        <div class="text-[11px] text-brown-300 leading-[1.5]">Integrity gate. Rule-survival invariant. PROBLEMS: none.</div>
-      </div>
-      <div class="rounded-xl bg-brown-800 ring-1 ring-brown-700 p-5 card relative">
-        <div class="absolute -top-3 left-4 w-8 h-8 rounded-full bg-gold-500 text-brown-950 font-mono text-[13px] font-bold flex items-center justify-center ring-4 ring-brown-900">7</div>
-        <div class="text-cream-50 font-bold text-[14px] mt-4 mb-1">Promote baseline</div>
-        <div class="text-[11px] text-brown-300 leading-[1.5]">Atomic merge via <span class="font-mono text-gold-400">promote-baseline.sh</span>.</div>
-      </div>
-    </div>
-
-    <!-- Path A / Path B -->
-    <div class="mt-16 grid md:grid-cols-2 gap-5">
-      <div class="rounded-2xl bg-brown-800 ring-1 ring-brown-700 p-5 sm:p-7 card">
-        <div class="eyebrow text-gold-400 mb-2">Path A</div>
-        <h3 class="text-[22px] sm:text-[26px] font-bold text-cream-50 mb-3">Autonomous</h3>
-        <p class="text-[14px] text-brown-200 leading-[1.6] mb-5">Claude desktop / Cowork mode drives the whole cycle in one session — read state, propose, show, apply on approval, re-run, promote.</p>
-        <ul class="space-y-2.5 text-[14px] text-cream-50">
-          <li class="flex items-start gap-2"><span class="text-gold-400 mt-0.5">→</span>Single-session end-to-end</li>
-          <li class="flex items-start gap-2"><span class="text-gold-400 mt-0.5">→</span>Human only approves the diff</li>
-          <li class="flex items-start gap-2"><span class="text-gold-400 mt-0.5">→</span>Auto-memory tracks cycle history</li>
-        </ul>
-      </div>
-      <div class="rounded-2xl bg-brown-800 ring-1 ring-gold-500/50 p-5 sm:p-7 card">
-        <div class="eyebrow text-gold-400 mb-2">Path B</div>
-        <h3 class="text-[22px] sm:text-[26px] font-bold text-cream-50 mb-3">Manual · cross-model</h3>
-        <p class="text-[14px] text-brown-200 leading-[1.6] mb-5">Drive audits from Cursor, Antigravity, Copilot, Cline, Continue, Windsurf, Zed. The path that earns PE Practice 5 — cross-model portability.</p>
-        <ul class="space-y-2.5 text-[14px] text-cream-50">
-          <li class="flex items-start gap-2"><span class="text-gold-400 mt-0.5">→</span>Any IDE × any model</li>
-          <li class="flex items-start gap-2"><span class="text-gold-400 mt-0.5">→</span>Surfaces real portability drift</li>
-          <li class="flex items-start gap-2"><span class="text-gold-400 mt-0.5">→</span>Runbook: <span class="font-mono text-gold-400">fine-tune/CROSS-MODEL-RUNBOOK.md</span></li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- Example prompt -->
-    <div class="mt-10 rounded-2xl bg-brown-950 ring-1 ring-gold-500/40 p-1">
-      <div class="px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-brown-900">
-        <div class="eyebrow text-gold-400">Example Path A invocation</div>
-        <div class="font-mono text-[11px] text-brown-300">one session · claude desktop · cowork mode</div>
-      </div>
-<pre class="code !rounded-t-none !border-0"><span class="c-comment"># Ask Claude to run one full fine-tune cycle:</span>
-
-<span class="c-cmd">Run one fine-tune cycle on AUDIT.md.</span>
-<span class="c-cmd">Target: lift Practice 6 (few-shot examples) from 4/5 to 5/5.</span>
-<span class="c-cmd">Propose the edit, show me, apply on my approval,</span>
-<span class="c-cmd">re-run the regression, update the baseline.</span>
-
-<span class="c-comment"># Claude will:</span>
-<span class="c-comment"># · read AUDIT.md, rule-registry.json, baseline.json, pe-best-practices.md</span>
-<span class="c-comment"># · draft PROPOSED-EDITS-&lt;date&gt;-&lt;scope&gt;.md with WRONG/RIGHT snippets</span>
-<span class="c-comment"># · pause for approval — you flip PROPOSED → ACCEPTED</span>
-<span class="c-comment"># · patch AUDIT.md, bump fingerprint, run coverage-sweep.py</span>
-<span class="c-comment"># · refresh .auto-memory/audit_md_project_state.md</span></pre>
-    </div>
-  </div>
-</section>
-
-<!-- PE RUBRIC -->
-<section id="rubric" class="py-14 md:py-24 bg-cream-100 border-b border-brown-100">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6">
-    <div class="grid md:grid-cols-2 gap-8 md:gap-12 items-start">
-      <div>
-        <div class="eyebrow text-gold-600 mb-4">The PE rubric</div>
-        <h2 class="text-[28px] sm:text-[32px] md:text-[44px] leading-[1.05] tracking-tight font-bold text-brown-900 mb-5">16 prompt-engineering practices.</h2>
-        <p class="text-[16px] leading-[1.6] text-brown-800 mb-7">Each practice scored 1–5 against the current AUDIT.md fingerprint. Total <strong>79/80 (0.9875)</strong>. Only <span class="gold font-bold">Practice 5 — model portability</span> is below 5/5, pending cross-model F006 re-fire under GPT-4.1 and Gemini-2.5-Pro.</p>
-        <div class="rounded-2xl bg-cream-50 ring-1 ring-gold-500/50 p-5 sm:p-6 shadow-warm-sm">
-          <div class="flex items-baseline flex-wrap gap-2 mb-3">
-            <span class="text-[36px] sm:text-[44px] font-bold text-brown-900 leading-none">79</span>
-            <span class="text-brown-500 text-base sm:text-lg">/ 80</span>
-            <span class="ml-auto font-mono text-[14px] sm:text-[15px] text-gold-700 font-bold">0.9875</span>
-          </div>
-          <div class="h-2.5 rounded-full bg-brown-100 overflow-hidden">
-            <div class="h-full bg-gradient-to-r from-gold-500 to-olive-600" style="width:98.75%"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Practice grid -->
-      <div class="grid grid-cols-3 sm:grid-cols-4 gap-2">
-        <!-- 1 -->
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="1: single canonical home — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">01</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">canonical home</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="2: token efficiency — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">02</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">token efficiency</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="3: stable anchoring — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">03</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">stable anchors</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="4: variables vs logic — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">04</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">vars vs logic</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <!-- Practice 5 - highlighted -->
-        <div class="aspect-square rounded-lg bg-gold-500/25 ring-1 ring-gold-500/70 p-2.5 flex flex-col justify-between" title="5: model portability — 4/5">
-          <div class="font-mono text-[11px] font-bold text-gold-700">05</div>
-          <div class="text-[11px] text-brown-900 leading-tight font-bold">model portability</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">4/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="6: worked examples — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">06</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">worked examples</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="7: refusal contract — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">07</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">refusal contract</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="8: anti-gaming — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">08</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">anti-gaming</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="9: self-conformance — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">09</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">self-conformance</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="10: output contract — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">10</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">output contract</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="11: anti-drift — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">11</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">anti-drift</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="12: failure modes named — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">12</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">failure modes</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="13: config externalized — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">13</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">config external</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="14: determinism cues — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">14</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">determinism</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="15: evidence redaction — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">15</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">evidence redact</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-        <div class="aspect-square rounded-lg bg-olive-600/15 ring-1 ring-olive-600/40 p-2.5 flex flex-col justify-between" title="16: mode separation — 5/5">
-          <div class="font-mono text-[11px] font-bold text-olive-600">16</div>
-          <div class="text-[11px] text-brown-800 leading-tight font-bold">mode separation</div>
-          <div class="font-mono text-[11px] text-brown-900 font-bold">5/5</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- What 80 is based on + Path to 80/80 -->
-    <div class="mt-16 grid md:grid-cols-2 gap-5">
-      <!-- What 80 is based on -->
-      <div class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 shadow-warm-sm p-5 sm:p-8">
-        <div class="eyebrow text-brown-600 mb-3">What 80 is based on</div>
-        <h3 class="text-[20px] sm:text-[24px] md:text-[28px] leading-[1.15] tracking-tight font-bold text-brown-900 mb-4">16 practices &times; 5 points.</h3>
-        <p class="text-[14px] text-brown-800 leading-[1.6] mb-5">The ceiling is not fixed. <code class="font-mono text-gold-700">max = 5 &times; N<sub>practices</sub></code>. Today N is 16, so the ceiling is 80. Add a 17<sup>th</sup> practice and the ceiling becomes 85.</p>
-        <div class="text-[12px] font-mono font-bold tracking-eyebrow uppercase text-brown-500 mb-2">Score scale &mdash; uniform across all practices</div>
-        <div class="rounded-xl ring-1 ring-brown-200 overflow-hidden">
-          <div class="grid grid-cols-[40px_1fr] text-[12px]">
-            <div class="bg-olive-600/15 px-3 py-2 font-mono font-bold text-olive-600 border-b border-brown-100">5</div>
-            <div class="px-3 py-2 text-brown-800 border-b border-brown-100">Best-in-class. Fully realized, no edge cases miss it.</div>
-            <div class="bg-olive-600/10 px-3 py-2 font-mono font-bold text-olive-600 border-b border-brown-100">4</div>
-            <div class="px-3 py-2 text-brown-800 border-b border-brown-100">Strong. Minor documented or harmless exceptions.</div>
-            <div class="bg-ochre-600/15 px-3 py-2 font-mono font-bold text-ochre-600 border-b border-brown-100">3</div>
-            <div class="px-3 py-2 text-brown-800 border-b border-brown-100">Adequate. Notable gaps, but not actively misleading.</div>
-            <div class="bg-terracotta-600/15 px-3 py-2 font-mono font-bold text-terracotta-600 border-b border-brown-100">2</div>
-            <div class="px-3 py-2 text-brown-800 border-b border-brown-100">Weak. Measurable drift or rework in some runs.</div>
-            <div class="bg-terracotta-600/25 px-3 py-2 font-mono font-bold text-terracotta-600">1</div>
-            <div class="px-3 py-2 text-brown-800">Absent or anti-pattern. The prompt works against it.</div>
-          </div>
-        </div>
-        <div class="mt-4 text-[12px] text-brown-600 leading-[1.55]">Hard gate: a proposed edit may never drop a single practice by &ge;2, and may never drop the TOTAL ratio by &ge;0.05 vs. the prior baseline.</div>
-      </div>
-
-      <!-- Path to 80/80 -->
-      <div class="rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 p-[1.5px] shadow-warm-md">
-        <div class="rounded-2xl bg-brown-900 text-cream-50 h-full p-6 sm:p-8">
-          <div class="eyebrow text-gold-400 mb-3">Path to 80/80</div>
-          <h3 class="text-[20px] sm:text-[24px] md:text-[28px] leading-[1.15] tracking-tight font-bold text-cream-50 mb-3">Practice 5 is the only gap.</h3>
-          <p class="text-[14px] text-brown-100 leading-[1.6] mb-6">Currently 4/5 &mdash; model-neutral phrasing (&ldquo;the agent&rdquo;) landed last cycle. The 5/5 bar is <em class="not-italic font-bold text-gold-300">empirical</em>: observed pass evidence in <code class="font-mono text-gold-300">baseline.json</code> under non-Claude models.</p>
-
-          <div class="space-y-3 mb-5">
-            <div class="flex items-start gap-3">
-              <span class="flex-shrink-0 w-7 h-7 rounded-md bg-gold-500 text-brown-950 font-mono font-bold text-[12px] flex items-center justify-center">1</span>
-              <div class="text-[13px] leading-[1.55]"><strong class="text-cream-50">Pick a non-Claude (model, IDE) combo.</strong> <span class="text-brown-200">GPT-4.1 + Cursor, or Gemini-2.5-Pro + Antigravity &mdash; held constant across the sweep.</span></div>
-            </div>
-            <div class="flex items-start gap-3">
-              <span class="flex-shrink-0 w-7 h-7 rounded-md bg-gold-500 text-brown-950 font-mono font-bold text-[12px] flex items-center justify-center">2</span>
-              <div class="text-[13px] leading-[1.55]"><strong class="text-cream-50">Run F006 (minimum) or F001&ndash;F008 (ideal).</strong> <span class="text-brown-200">Follow <code class="font-mono text-gold-300">fine-tune/CROSS-MODEL-RUNBOOK.md</code> end-to-end.</span></div>
-            </div>
-            <div class="flex items-start gap-3">
-              <span class="flex-shrink-0 w-7 h-7 rounded-md bg-gold-500 text-brown-950 font-mono font-bold text-[12px] flex items-center justify-center">3</span>
-              <div class="text-[13px] leading-[1.55]"><strong class="text-cream-50">Write capture.json per fixture.</strong> <span class="text-brown-200">Build a merge candidate, apply via <code class="font-mono text-gold-300">apply-merge-candidate.py</code>, verify with <code class="font-mono text-gold-300">coverage-sweep.py</code>.</span></div>
-            </div>
-            <div class="flex items-start gap-3">
-              <span class="flex-shrink-0 w-7 h-7 rounded-md bg-gold-500 text-brown-950 font-mono font-bold text-[12px] flex items-center justify-center">4</span>
-              <div class="text-[13px] leading-[1.55]"><strong class="text-cream-50">Any fixture failure is the gap.</strong> <span class="text-brown-200">The failure points at Claude-specific phrasing &mdash; rewrite, re-run, promote. A mini fine-tune cycle scoped to portability.</span></div>
-            </div>
-            <div class="flex items-start gap-3">
-              <span class="flex-shrink-0 w-7 h-7 rounded-md bg-gold-500 text-brown-950 font-mono font-bold text-[12px] flex items-center justify-center">5</span>
-              <div class="text-[13px] leading-[1.55]"><strong class="text-cream-50">Promote Practice 5 to 5/5</strong> <span class="text-brown-200">in <code class="font-mono text-gold-300">baseline.json &rarr; pe_scores</code> under the new fingerprint.</span></div>
-            </div>
-          </div>
-
-          <div class="pt-4 border-t border-brown-800 grid grid-cols-2 gap-3 text-[12px]">
-            <div>
-              <div class="eyebrow text-brown-300 mb-1">Min effort</div>
-              <div class="text-cream-50 font-bold">2&ndash;4 hours</div>
-              <div class="text-brown-300">1 combo &times; F006</div>
-            </div>
-            <div>
-              <div class="eyebrow text-brown-300 mb-1">Full sweep</div>
-              <div class="text-cream-50 font-bold">~ half day</div>
-              <div class="text-brown-300">2 combos &times; F001&ndash;F008</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Progress history -->
-    <div class="mt-10 rounded-2xl bg-cream-50 ring-1 ring-brown-200 shadow-warm-sm p-5 sm:p-8">
-      <div class="eyebrow text-brown-600 mb-5">PE rubric history</div>
-      <div class="space-y-3">
-        <div class="flex items-center gap-3">
-          <span class="w-20 font-mono text-[11px] font-bold text-brown-600">v2 baseline</span>
-          <div class="flex-1 h-2.5 rounded-full bg-brown-100 overflow-hidden">
-            <div class="h-full bg-brown-400" style="width:78.75%"></div>
-          </div>
-          <span class="w-16 text-right font-mono text-[13px] font-bold text-brown-700">63/80</span>
-        </div>
-        <div class="flex items-center gap-3">
-          <span class="w-20 font-mono text-[11px] font-bold text-brown-600">v2 close</span>
-          <div class="flex-1 h-2.5 rounded-full bg-brown-100 overflow-hidden">
-            <div class="h-full bg-brown-500" style="width:86.25%"></div>
-          </div>
-          <span class="w-16 text-right font-mono text-[13px] font-bold text-brown-700">69/80</span>
-        </div>
-        <div class="flex items-center gap-3">
-          <span class="w-20 font-mono text-[11px] font-bold text-brown-600">v3</span>
-          <div class="flex-1 h-2.5 rounded-full bg-brown-100 overflow-hidden">
-            <div class="h-full bg-ochre-600" style="width:92.5%"></div>
-          </div>
-          <span class="w-16 text-right font-mono text-[13px] font-bold text-brown-800">74/80</span>
-        </div>
-        <div class="flex items-center gap-3">
-          <span class="w-20 font-mono text-[11px] font-bold text-gold-700">v4</span>
-          <div class="flex-1 h-2.5 rounded-full bg-brown-100 overflow-hidden">
-            <div class="h-full bg-gold-500" style="width:98.75%"></div>
-          </div>
-          <span class="w-16 text-right font-mono text-[13px] font-bold text-brown-900">79/80</span>
-        </div>
-      </div>
-      <p class="mt-6 text-[13px] text-brown-700">Every cycle is gated by <code class="font-mono text-gold-700">coverage-sweep.py</code> — an edit that gains a PE point but breaks a previously-passing cell is rejected.</p>
-    </div>
-  </div>
-</section>
-
-<!-- KEEPING THE LOOP CURRENT -->
-<section class="py-14 md:py-24 border-b border-brown-100">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6">
-    <div class="max-w-3xl">
-      <div class="eyebrow text-gold-600 mb-4">Keeping the loop current</div>
-      <h2 class="text-[28px] sm:text-[32px] md:text-[44px] leading-[1.05] tracking-tight font-bold text-brown-900 mb-4">The rubric is versioned and extensible.</h2>
-      <p class="text-[16px] leading-[1.6] text-brown-800">When a new prompt-engineering practice emerges, add it to <code class="font-mono text-gold-700">pe-best-practices.md</code> with 1/3/5 anchors. Total jumps to 85; ratio drops until you earn the new points. The regression harness keeps you honest — gaming the rubric breaks a fixture cell.</p>
-    </div>
-
-    <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-      <a href="https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener" class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6 card block shadow-warm-xs">
-        <div class="eyebrow text-gold-600 mb-2">Primary</div>
-        <div class="text-brown-900 font-bold mb-1">Anthropic prompt-engineering docs</div>
-        <div class="text-[12px] text-brown-700 leading-[1.5]">Updated with each model generation.</div>
-      </a>
-      <a href="https://platform.openai.com/docs/guides/prompt-engineering" target="_blank" rel="noopener" class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6 card block shadow-warm-xs">
-        <div class="eyebrow text-gold-600 mb-2">Cross-reference</div>
-        <div class="text-brown-900 font-bold mb-1">OpenAI prompt engineering guide</div>
-        <div class="text-[12px] text-brown-700 leading-[1.5]">Useful for Practice 5 portability signals.</div>
-      </a>
-      <a href="https://ai.google.dev/gemini-api/docs/prompting-strategies" target="_blank" rel="noopener" class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6 card block shadow-warm-xs">
-        <div class="eyebrow text-gold-600 mb-2">Cross-reference</div>
-        <div class="text-brown-900 font-bold mb-1">Google Gemini prompting docs</div>
-        <div class="text-[12px] text-brown-700 leading-[1.5]">Edge cases other vendors don't surface.</div>
-      </a>
-      <div class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6 card shadow-warm-xs">
-        <div class="eyebrow text-brown-600 mb-2">Watch</div>
-        <div class="text-brown-900 font-bold mb-1">Model cards and changelogs</div>
-        <div class="text-[12px] text-brown-700 leading-[1.5]">Each major release publishes prompting notes — read them.</div>
-      </div>
-      <div class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6 card shadow-warm-xs">
-        <div class="eyebrow text-brown-600 mb-2">Watch</div>
-        <div class="text-brown-900 font-bold mb-1">arXiv cs.CL — prompting, ICL, CoT</div>
-        <div class="text-[12px] text-brown-700 leading-[1.5]">Filter for reproducible results, not single-benchmark claims.</div>
-      </div>
-      <div class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6 card shadow-warm-xs">
-        <div class="eyebrow text-brown-600 mb-2">Signal</div>
-        <div class="text-brown-900 font-bold mb-1">Multi-vendor convergence</div>
-        <div class="text-[12px] text-brown-700 leading-[1.5]">A pattern in ≥2 vendor docs independently is stronger evidence than one advocating.</div>
-      </div>
-    </div>
-
-    <div class="mt-10 rounded-2xl bg-brown-50 ring-1 ring-brown-200 p-6 flex items-start gap-4">
-      <div class="w-10 h-10 rounded-lg bg-brown-900 flex items-center justify-center flex-shrink-0">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4BA17" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      </div>
-      <div class="text-[14px] text-brown-800 leading-[1.6]"><strong class="text-brown-900">Cadence:</strong> a quarterly rubric review. Add any matured practice, raise the 1–5 bar where the field has moved, retire practices modern models now ignore. Run one cycle per rubric change.</div>
-    </div>
-
-    <!-- How to add a practice (step-by-step) -->
-    <div class="mt-12 grid md:grid-cols-2 gap-5">
-      <div class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6 sm:p-8 shadow-warm-xs">
-        <div class="eyebrow text-gold-600 mb-3">How to add a practice &amp; raise the ceiling</div>
-        <h3 class="text-[22px] font-bold text-brown-900 mb-5 leading-tight">Six-step mechanism</h3>
-        <ol class="space-y-4 text-[14px] text-brown-800 leading-[1.6] list-none">
-          <li class="flex gap-3"><span class="flex-shrink-0 w-6 h-6 rounded-full bg-brown-900 text-gold-400 font-mono text-[12px] flex items-center justify-center">1</span><div><strong class="text-brown-900">Qualify it.</strong> The candidate must appear in ≥2 vendor docs or ≥2 independent reproducible studies. Single-vendor advocacy is noise; multi-vendor convergence is signal.</div></li>
-          <li class="flex gap-3"><span class="flex-shrink-0 w-6 h-6 rounded-full bg-brown-900 text-gold-400 font-mono text-[12px] flex items-center justify-center">2</span><div><strong class="text-brown-900">Append, never renumber.</strong> Add it to <code class="font-mono text-gold-700">pe-best-practices.md</code> with the next integer index (17, 18, …). <code class="font-mono text-gold-700">baseline.json</code> cells reference practices by integer — renumbering breaks the ledger.</div></li>
-          <li class="flex gap-3"><span class="flex-shrink-0 w-6 h-6 rounded-full bg-brown-900 text-gold-400 font-mono text-[12px] flex items-center justify-center">3</span><div><strong class="text-brown-900">Write the 1/3/5 anchors.</strong> Anchor "5" to a best-in-class observable (not a vibe). "1" is the anti-pattern. "3" is adequate-with-gaps. Keep anchors measurable — "AUDIT.md contains a <code class="font-mono text-gold-700">§X.y</code>…" beats "the spec should be clear."</div></li>
-          <li class="flex gap-3"><span class="flex-shrink-0 w-6 h-6 rounded-full bg-brown-900 text-gold-400 font-mono text-[12px] flex items-center justify-center">4</span><div><strong class="text-brown-900">Score honestly.</strong> First score is usually 2–3, not 5. That drop is the point — the ratio in <code class="font-mono text-gold-700">baseline.json → pe_scores</code> shows where the work is.</div></li>
-          <li class="flex gap-3"><span class="flex-shrink-0 w-6 h-6 rounded-full bg-brown-900 text-gold-400 font-mono text-[12px] flex items-center justify-center">5</span><div><strong class="text-brown-900">Earn the points.</strong> Edit <code class="font-mono text-gold-700">AUDIT.md</code> to hit the 5-anchor. One fine-tune cycle per rubric change — the coverage-sweep + hard-gate invariant keeps you from gaming it.</div></li>
-          <li class="flex gap-3"><span class="flex-shrink-0 w-6 h-6 rounded-full bg-brown-900 text-gold-400 font-mono text-[12px] flex items-center justify-center">6</span><div><strong class="text-brown-900">Update the ceiling.</strong> <code class="font-mono text-gold-700">max = 5 × N_practices</code>. 16 → 80. 17 → 85. 20 → 100. The scale grows with the field; your evidence grows with it.</div></li>
+    <div class="looprow">
+      <div class="card glass-std">
+        <h3 style="margin-bottom:14px">One improvement cycle <span class="mono" style="font-size:12px;color:#8a6a4e">(improve/CRITIC.md)</span></h3>
+        <ol class="loop-steps">
+          <li>Gather evidence — protocol, changelog, failure log, last retros, <span class="mono">evals --all</span>.</li>
+          <li>Critique, severity-weighted — find where wording lets an agent satisfy the letter but violate the intent. Zero findings is a valid outcome.</li>
+          <li>Propose ONE minimal change — and pay for any added rule by trimming elsewhere.</li>
+          <li>Gate it — add/extend a trap fixture, run all evals, release only on green.</li>
+          <li>Log it — changelog entry, immutable copy in <span class="mono">improve/versions/</span>, retrospective.</li>
+          <li>Stop on diminishing returns — two consecutive zero-High cycles end the campaign.</li>
         </ol>
-        <div class="mt-5 pt-5 border-t border-brown-100 text-[12px] text-brown-700 leading-[1.55]"><strong class="text-brown-900">Guardrail:</strong> hard gate — no single practice may drop ≥2 points vs. prior baseline; TOTAL ratio may not drop ≥0.05 across a cycle. Adding a new practice is allowed to dilute; regressing existing ones is not.</div>
       </div>
+      <div class="card glass-std">
+        <h3 style="margin-bottom:10px">First campaign — run on itself, 2026-06-10</h3>
+        <table>
+          <thead><tr><th>Cycle</th><th>Release</th><th>The one change</th><th>Evals</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">1</td><td class="mono">v2.0.1</td><td>Evidence became row-traceable — closed a partial-fabrication exploit</td><td class="ok">13/13</td></tr>
+            <tr><td class="mono">2</td><td class="mono">v2.1.0</td><td>Human approvals became durable artifacts (<span class="mono">Approved:</span> line)</td><td class="ok">14/14</td></tr>
+            <tr><td class="mono">3</td><td class="mono">v2.1.1</td><td>One escape-hatch vocabulary — no more false violations on honest runs</td><td class="ok">15/15</td></tr>
+            <tr><td class="mono">4–5</td><td class="mono">—</td><td>Zero findings ≥ High, twice → campaign stopped by its own rule</td><td class="ok">15/15</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:12.5px;color:#8a6a4e;margin-top:12px">Every row has a full evidence trail in <span class="mono">CHANGELOG.md</span>, <span class="mono">improve/FAILURE_LOG.md</span>, and <span class="mono">improve/retros/</span>.</p>
+      </div>
+    </div>
 
-      <div class="rounded-2xl bg-cream-50 ring-1 ring-brown-200 p-6 sm:p-8 shadow-warm-xs">
-        <div class="eyebrow text-gold-600 mb-3">Candidate new practices (watchlist)</div>
-        <h3 class="text-[22px] font-bold text-brown-900 mb-5 leading-tight">Four patterns under observation</h3>
-        <p class="text-[13px] text-brown-700 leading-[1.55] mb-5">Tracked across Anthropic, OpenAI, and Google docs + recent model cards. Not yet added to the rubric — each needs multi-vendor survival evidence before earning an integer index.</p>
-        <div class="space-y-3">
-          <div class="rounded-lg bg-brown-50 ring-1 ring-brown-100 p-4">
-            <div class="flex items-baseline gap-2 mb-1">
-              <span class="font-mono text-[11px] text-gold-700 font-bold">17 ·</span>
-              <div class="font-bold text-brown-900 text-[14px]">Context-window awareness</div>
-            </div>
-            <div class="text-[12px] text-brown-700 leading-[1.55]">Spec should degrade gracefully at 8k / 32k / 200k+ contexts. Front-load load-bearing rules; repeat critical invariants near anchors that models attend to.</div>
-          </div>
-          <div class="rounded-lg bg-brown-50 ring-1 ring-brown-100 p-4">
-            <div class="flex items-baseline gap-2 mb-1">
-              <span class="font-mono text-[11px] text-gold-700 font-bold">18 ·</span>
-              <div class="font-bold text-brown-900 text-[14px]">Reasoning-mode compatibility</div>
-            </div>
-            <div class="text-[12px] text-brown-700 leading-[1.55]">Behavior under <em>extended thinking</em> / reasoning modes (o-series, Claude thinking) should not diverge from non-reasoning output. Spec must not inadvertently suppress or inflate chain-of-thought.</div>
-          </div>
-          <div class="rounded-lg bg-brown-50 ring-1 ring-brown-100 p-4">
-            <div class="flex items-baseline gap-2 mb-1">
-              <span class="font-mono text-[11px] text-gold-700 font-bold">19 ·</span>
-              <div class="font-bold text-brown-900 text-[14px]">Tool-use invariance</div>
-            </div>
-            <div class="text-[12px] text-brown-700 leading-[1.55]">AUDIT.md outputs are identical whether the agent is told to use tools, runs standalone, or runs inside an orchestrator. No rule should rely on a specific tool being present.</div>
-          </div>
-          <div class="rounded-lg bg-brown-50 ring-1 ring-brown-100 p-4">
-            <div class="flex items-baseline gap-2 mb-1">
-              <span class="font-mono text-[11px] text-gold-700 font-bold">20 ·</span>
-              <div class="font-bold text-brown-900 text-[14px]">Groundedness &amp; verifiability</div>
-            </div>
-            <div class="text-[12px] text-brown-700 leading-[1.55]">Every claim in the audit output is traceable to a specific rule ID + file path + line range. Hallucinated findings fail the invariant at capture time.</div>
-          </div>
-        </div>
-      </div>
+    <div style="margin-top:var(--sp-6)" class="card glass-heavy">
+      <h3>The regression gate, in one command</h3>
+      <p style="margin:8px 0 14px;font-size:14px;color:#5b3a22">Twelve fault-injection traps plant exactly one violation each — a fabricated metric, an uncited "Palantir-grade" target, a leaked AWS key, an unapproved execution. The validator must catch each planted fault and nothing else. A trap that stops tripping means a rule has died — and the edit is blocked.</p>
+      <div class="codeblock" role="img" aria-label="Eval harness output showing 15 of 15 fixtures green">$ python3 evals/validate.py --all
+<span class="g">[PASS]</span> B01-fabricated-metric      <span class="c">expect=fail → trapped as expected</span>
+<span class="g">[PASS]</span> B07-secret-leak            <span class="c">expect=fail → trapped as expected</span>
+<span class="g">[PASS]</span> B12-gated-unapproved-exec  <span class="c">expect=fail → trapped as expected</span>
+<span class="g">[PASS]</span> G01-clean-run              <span class="c">expect=pass → clean</span>
+<span class="c">… 11 more …</span>
+<span class="y">15/15 fixtures OK — ALL GREEN</span></div>
     </div>
   </div>
 </section>
 
-<!-- SUPPORT -->
-<section class="py-16 md:py-24 bg-brown-900 text-cream-50 relative overflow-hidden">
-  <div class="absolute inset-0 tex-glow opacity-50"></div>
-  <div class="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
-    <div class="eyebrow text-gold-400 mb-4">Support</div>
-    <h2 class="text-[28px] sm:text-[36px] md:text-[52px] leading-[1.05] tracking-tight font-bold text-cream-50 mb-5">If this saved you a review cycle…</h2>
-    <p class="text-[17px] leading-[1.6] text-brown-100 max-w-2xl mx-auto mb-10">…consider supporting the work. New fixtures, new rubric entries, cross-model sweeps, and keeping the regression harness honest all take real time. Every coffee buys a cycle.</p>
-    <a href="https://buymeacoffee.com/zintaen" target="_blank" rel="noopener"
-       class="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gold-500 hover:bg-gold-400 text-brown-950 font-bold text-[17px] transition shadow-glow-gold">
-      Buy me a coffee
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
-    </a>
-    <div class="mt-6 font-mono text-[12px] text-brown-300">buymeacoffee.com/zintaen</div>
+<!-- ================= TOOLS ================= -->
+<section id="tools" style="padding-top:0">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:20px">
+      <span class="eyebrow">AI-agnostic</span>
+      <h2>Bring your own agent.</h2>
+      <p class="lede">The protocol needs nothing but a shell, git, and file I/O — every major coding agent qualifies. Tool-specific wiring notes ship in the README.</p>
+    </div>
+    <div class="tools">
+      <span class="tool glass">Claude Code · CLAUDE.md</span>
+      <span class="tool glass">Cursor · AGENTS.md / rules</span>
+      <span class="tool glass">Gemini CLI · GEMINI.md</span>
+      <span class="tool glass">Codex CLI · AGENTS.md</span>
+      <span class="tool glass">Windsurf · AGENTS.md</span>
+      <span class="tool glass">OpenHands &amp; others</span>
+    </div>
   </div>
 </section>
 
-<!-- FOOTER -->
-<footer class="py-12 bg-brown-950 text-brown-300">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-      <div class="flex items-center gap-3">
-        <span class="inline-flex w-10 h-10 rounded-md bg-brown-900 items-center justify-center overflow-hidden">
-          <img src="assets/cyberskill-logo.svg" alt="CyberSkill" width="30" height="36" class="select-none"/>
-        </span>
+<!-- ================= PARTNERS ================= -->
+<section id="partners">
+  <div class="wrap">
+    <div class="band">
+      <span class="eyebrow" style="color:var(--cs-ochre)">Work with CyberSkill</span>
+      <h2>We build AI-first engineering systems like this one — for your team.</h2>
+      <p class="vn">Đối tác toàn cầu, chất lượng kỹ nghệ Việt Nam.</p>
+      <p>AUDIT.md is how we work in the open: research-backed, evidence-gated, self-improving. The same discipline goes into what we build for clients and partners worldwide.</p>
+      <ul>
+        <li>Agent protocols, harnesses &amp; evaluation pipelines for your engineering org</li>
+        <li>AI-assisted code audit &amp; modernization of existing products</li>
+        <li>Full-cycle software consultancy and development — design system to deployment</li>
+      </ul>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;position:relative">
+        <a class="btn btn-ochre" href="mailto:info@cyberskill.world?subject=Partnership%20inquiry%20—%20AUDIT.md">Start a conversation →</a>
+        <a class="btn" style="color:#fff;border:1px solid rgba(255,255,255,.45)" href="https://cyberskill.world" rel="noopener">cyberskill.world</a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div class="foot-brand">
+        <img src="assets/cyberskill-logo.svg" alt="CyberSkill logo" width="30" height="37"/>
         <div>
-          <div class="font-bold text-cream-50 text-[15px]">AUDIT<span class="text-gold-400">.md</span> <span class="text-brown-400 font-medium">· by CyberSkill</span></div>
-          <div class="text-[11px] text-brown-400 mt-0.5">Self-auditing repo-audit prompt · regression-gated fine-tune loop</div>
+          <b style="font-size:15px">CyberSkill</b>
+          <p style="margin-top:6px;max-width:38ch">Software solutions consultancy and development. Founded 2020, Ho Chi Minh City — serving clients globally.</p>
+          <p style="margin-top:6px;font-weight:600;color:var(--cs-text-accent)">Turn Your Will Into Real — Hiện Thực Hoá Ý Chí</p>
         </div>
       </div>
-      <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px]">
-        <a href="https://github.com/zintaen/code-audit" target="_blank" rel="noopener" class="text-brown-300 hover:text-gold-400 transition flex items-center gap-2">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.38 7.86 10.9.58.1.79-.25.79-.56v-2.04c-3.2.7-3.87-1.37-3.87-1.37-.52-1.32-1.28-1.67-1.28-1.67-1.04-.72.08-.7.08-.7 1.15.08 1.75 1.18 1.75 1.18 1.03 1.76 2.7 1.25 3.36.95.1-.74.4-1.25.72-1.54-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.45.11-3.03 0 0 .97-.31 3.18 1.17a11 11 0 015.8 0c2.2-1.48 3.17-1.17 3.17-1.17.63 1.58.24 2.74.12 3.03.73.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.26 5.65.41.35.78 1.04.78 2.1v3.11c0 .31.2.67.8.56A11.5 11.5 0 0023.5 12c0-6.27-5.23-11.5-11.5-11.5z"/></svg>
-          GitHub
-        </a>
-        <a href="README.md" class="text-brown-300 hover:text-gold-400 transition">README</a>
-        <a href="https://buymeacoffee.com/zintaen" target="_blank" rel="noopener" class="text-gold-400 hover:text-gold-300 transition">Support the work</a>
+      <div>
+        <h4>Project</h4>
+        <p><a href="https://github.com/zintaen/prompts" rel="noopener">Source &amp; README</a></p>
+        <p><a href="https://github.com/zintaen/prompts/blob/main/CHANGELOG.md" rel="noopener">Changelog (v2.1.1)</a></p>
+        <p><a href="https://github.com/zintaen/prompts/blob/main/improve/CRITIC.md" rel="noopener">Self-improvement cycle</a></p>
+        <p><a href="https://buymeacoffee.com/zintaen" rel="noopener">Buy a fine-tune cycle ☕</a></p>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <p><a href="mailto:info@cyberskill.world">info@cyberskill.world</a></p>
+        <p><a href="tel:+84906878091">(+84) 906 878 091</a></p>
+        <p>1st Floor, 207A Nguyen Van Thu St.,<br/>Tan Dinh Ward, Ho Chi Minh City, Vietnam</p>
       </div>
     </div>
-    <div class="mt-8 pt-6 border-t border-brown-900 flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-[11px] font-mono text-brown-500">
-      <div>AUDIT.md <span class="text-brown-300">sha256:a3c86e12…</span> · PE 79/80 · 40 rules · 8 fixtures · 81 cells</div>
-      <div>Built with care. MIT-style open source. Cycles gated by coverage-sweep.</div>
+    <div class="legal">
+      <span>© 2020–2026 CYBERSKILL SOFTWARE SOLUTIONS CONSULTANCY AND DEVELOPMENT JOINT STOCK COMPANY</span>
+      <span class="mono">AUDIT.md v2.1.1 · evals 15/15 · made with Liquid Glass</span>
     </div>
   </div>
 </footer>
 
+<script src="assets/analytics.bundle.js"></script>
 </body>
 </html>

@@ -1,1 +1,0 @@
-{"deleted": true, "note": "Transient test artifact used to verify diff-vs-baseline.sh catches rule-level regression. Virtiofs forbids unlink so the file is stubbed out instead of removed."}

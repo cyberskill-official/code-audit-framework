@@ -1,9 +1,0 @@
-================================================================================
-HITL ACTION REQUIRED
-================================================================================
-The audit run (run-2026-04-23T10:00:00Z-f006) has completed in SCAN mode.
-There are 3 PROPOSED findings that require human review.
-
-Please review the findings in .audit/reports/2026/04/2026-04-23.md.
-To authorize execution, change the status of the desired tasks from PROPOSED to APPROVED in the relevant JSON and markdown files, and then run the agent in EXECUTE mode.
-================================================================================
