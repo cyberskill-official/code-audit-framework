@@ -4,6 +4,6 @@
   "description": "AUDIT.md — a self-auditing repo-audit prompt",
   "private": true,
   "dependencies": {
-    "@vercel/analytics": "^1.6.1"
+    "@vercel/analytics": "^2.0.1"
   }
 }
