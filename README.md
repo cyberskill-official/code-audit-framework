@@ -13,10 +13,10 @@ weakens a rule.
 
 | | |
 |---|---|
-| Protocol | [`AUDIT.md`](./AUDIT.md) — current release **v1.0.0** |
+| Protocol | [`AUDIT.md`](./AUDIT.md) — current release **v1.1.0** |
 | History | [`CHANGELOG.md`](./CHANGELOG.md) · immutable copies in [`improve/versions/`](./improve/versions/) |
 | Self-improvement | [`improve/CRITIC.md`](./improve/CRITIC.md) — one evidenced change per cycle |
-| Regression gate | [`evals/`](./evals/) — **15 fixtures, 15/15 green** at v1.0.0, stdlib-only Python |
+| Regression gate | [`evals/`](./evals/) — **16 fixtures, 16/16 green** at v1.1.0, stdlib-only Python |
 | For agents | [`AGENTS.md`](./AGENTS.md) — machine-facing operating rules for this repo |
 
 ---
@@ -153,7 +153,7 @@ regression-tested, and changed only with evidence.
    improve/CRITIC.md         ──  ONE minimal change; PATCH/MINOR/MAJOR
                   │
                   ▼
-   evals/validate.py --all   ──  15 fixtures must stay green
+   evals/validate.py --all   ──  16 fixtures must stay green
                   │
                   ▼
    CHANGELOG.md + improve/versions/AUDIT-vX.Y.Z.md  (immutable release)
@@ -172,8 +172,16 @@ already been run on itself; the pre-release hardening campaign (2026-06-10,
 | 3 | One escape-hatch vocabulary across R1 and Phase 5 (compliant runs were flagged as violations) | 15/15 |
 | 4–5 | Zero findings ≥ High, twice → campaign stop (a) | 15/15 |
 
+Campaign 2 (2026-06-10, after the move to CyberSkill ownership) opened with a
+full blind-spot review — the seven declared harness blind spots re-verified and
+four new ones registered ([`improve/BLINDSPOTS.md`](./improve/BLINDSPOTS.md)) —
+and ran one cycle: **v1.1.0** echoes `Mode:` in every backlog, closing a
+demonstrated gated-mode evasion (BS-08). Evals: 16/16. Stop condition (c):
+fixed cycle count requested by the maintainer.
+
 Full evidence trail: [`CHANGELOG.md`](./CHANGELOG.md),
 [`improve/FAILURE_LOG.md`](./improve/FAILURE_LOG.md),
+[`improve/BLINDSPOTS.md`](./improve/BLINDSPOTS.md),
 [`improve/retros/`](./improve/retros/).
 
 ---
@@ -181,7 +189,7 @@ Full evidence trail: [`CHANGELOG.md`](./CHANGELOG.md),
 ## The regression harness
 
 ```bash
-python3 evals/validate.py --all      # 15 fixtures: G* must pass, B* must trip
+python3 evals/validate.py --all      # 16 fixtures: G* must pass, B* must trip
 ./evals/run-evals.sh --record        # run + pin baseline.json to AUDIT.md's sha256
 python3 evals/validate.py --run DIR  # validate any real run's docs/ output
 ```
@@ -210,11 +218,12 @@ improve/
   CRITIC.md              ← the self-improvement cycle (meta-prompt)
   RETROSPECTIVE.md       ← 10-question post-run rubric (/20)
   FAILURE_LOG.md         ← failures → candidate edits → promotions
+  BLINDSPOTS.md          ← register of what the harness cannot see (+ status)
   versions/              ← immutable released versions (v1.0.0 …)
   retros/                ← filled retrospectives (pre-release cycles 1–5 included)
 evals/
   validate.py            ← deterministic conformance checker (stdlib only)
-  fixtures/              ← G* compliant runs + B* fault-injection traps (15)
+  fixtures/              ← G* compliant runs + B* fault-injection traps (16)
   rules.json             ← rule → AUDIT.md anchor → fixtures (+ honest gaps)
   baseline.json          ← last green matrix, pinned to AUDIT.md sha256
   run-evals.sh           ← runner; --record refreshes the baseline

@@ -1,6 +1,6 @@
 {
   "name": "code-audit-framework",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "AUDIT.md — an honest, self-improving audit protocol for AI coding agents, by CyberSkill",
   "private": true,
   "scripts": {

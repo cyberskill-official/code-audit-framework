@@ -223,21 +223,28 @@ def check_task_table(header, rows, violations, src, protected):
 
 
 APPROVED_RE = re.compile(r"^Approved:\s*(.+)$", re.MULTILINE)
+MODE_GATED_RE = re.compile(r"(?mi)^\s*-?\s*Mode:\s*gated\b")
 EXECUTED_STATUSES = {"DONE", "IN-PROGRESS", "BLOCKED"}
 
 
 def check_approvals(text, violations, src):
-    """Gated-mode invariant: if a loop section carries an `Approved:`
-    line, every executed task (DONE / IN-PROGRESS / BLOCKED) in that section
-    must be listed on it. Sections without an Approved line are not checked
-    (autonomous mode)."""
+    """Gated-mode invariant: every executed task (DONE / IN-PROGRESS /
+    BLOCKED) in a loop section must be listed on that section's `Approved:`
+    line. The check fires when the line exists OR the section echoes
+    `Mode: gated` (v1.1.0) — a gated loop with executed tasks and no
+    `Approved:` line is a violation, not an exemption. Sections declaring
+    neither are treated as autonomous and not checked."""
     sections = re.split(r"(?m)^## (?=Loop\b)", text)
     for sec in sections:
         m = APPROVED_RE.search(sec)
-        if not m:
+        gated = MODE_GATED_RE.search(sec) is not None
+        if not m and not gated:
             continue
-        raw = m.group(1).strip()
-        approved = set() if raw.lower() == "none" else {norm(x) for x in raw.split(",") if x.strip()}
+        if m:
+            raw = m.group(1).strip()
+            approved = set() if raw.lower() == "none" else {norm(x) for x in raw.split(",") if x.strip()}
+        else:
+            approved = set()
         for header, rows, _ in parse_tables(sec):
             ii, st_i = col(header, "id"), col(header, "status")
             if ii is None or st_i is None or col(header, "metric") is not None:
@@ -246,8 +253,10 @@ def check_approvals(text, violations, src):
                 tid = r[ii] if ii < len(r) else ""
                 status = r[st_i] if st_i < len(r) else ""
                 if status in EXECUTED_STATUSES and tid and tid not in approved:
+                    why = ("not on this loop's Approved: line" if m
+                           else "this gated loop has no Approved: line at all")
                     violations.append(("GATED-UNAPPROVED-EXEC", src,
-                                       f"task '{tid}' is {status} but not on this loop's Approved: line"))
+                                       f"task '{tid}' is {status} but {why}"))
 
 
 def check_secrets(text, violations, src):

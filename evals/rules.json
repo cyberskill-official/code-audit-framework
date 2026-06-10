@@ -98,15 +98,16 @@
     },
     {
       "rule_id": "P2-GATE",
-      "anchor": "PHASE 2 \u2014 gated-mode approval artifact",
+      "anchor": "PHASE 2 \u2014 gated-mode approval artifact; Mode echoed in Scope & method (v1.1.0)",
       "violation_codes": [
         "GATED-UNAPPROVED-EXEC"
       ],
       "fixtures_exercising": [
         "G01-clean-run",
-        "B12-gated-unapproved-exec"
+        "B12-gated-unapproved-exec",
+        "B14-gated-missing-approval"
       ],
-      "coverage_note": "Checked only when an `Approved:` line is present in a loop section; autonomous runs carry no such line."
+      "coverage_note": "Fires when a loop section carries an `Approved:` line OR echoes `Mode: gated` (v1.1.0 closed the omitted-line evasion, BLINDSPOTS BS-08). Residual: a run that suppresses the Mode echo entirely is template-noncompliant and out of tripwire reach; autonomous runs carry no gate."
     },
     {
       "rule_id": "P5",

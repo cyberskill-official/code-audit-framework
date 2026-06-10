@@ -15,6 +15,12 @@ Versioning: **MAJOR.MINOR.PATCH**
 
 ---
 
+## v1.1.0 — 2026-06-10 (improvement campaign 2, cycle 1)
+
+- **MINOR: The backlog now echoes its MODE.** Phase 2's "Scope & method" template line gains a leading `Mode: <MODE>` field. This makes the gated-mode guarantee post-hoc enforceable: the validator now flags any loop section that declares `Mode: gated` and contains executed tasks (DONE / IN-PROGRESS / BLOCKED) without an `Approved:` line — previously the check fired only when the line already existed, so *omitting it entirely* evaded the gate.
+- **Trigger:** Blind-spot review 2026-06-10 (High) — live exploit demonstrated against v1.0.0: a synthetic gated run with executed tasks and zero `Approved:` lines validated "CLEAN — no violations" (`improve/BLINDSPOTS.md` BS-08). Second observation of the family first logged in pre-release cycle 4 (FAILURE_LOG) — promotion bar met.
+- **Harness:** `check_approvals` fires on `Mode: gated` OR an `Approved:` line; new trap fixture `B14-gated-missing-approval` (the exploit, verbatim, as a fixture); `G01-clean-run` strengthened to exercise the positive gated path. Net protocol size change: 0 lines. Evals: **16/16 green.**
+
 ## v1.0.0 — 2026-06-10
 
 - **Initial public release** under [cyberskill-official/code-audit-framework](https://github.com/cyberskill-official/code-audit-framework). The repository is the product: the AUDIT.md protocol plus the machinery that improves it (the `improve/` loop, the `evals/` regression gate, and the product page).
