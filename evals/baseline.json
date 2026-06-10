@@ -1,9 +1,9 @@
 {
   "audit_md_version": "v1.1.0",
   "audit_md_sha256": "7ee188a0fc7b8be6a72417e9a540257dd25e022d22f2c7ffc1dbf50d60527d60",
-  "recorded_at": "2026-06-10T00:05:02+00:00",
-  "fixtures": 16,
-  "passed": 16,
+  "recorded_at": "2026-06-10T08:02:31+00:00",
+  "fixtures": 24,
+  "passed": 24,
   "all_ok": true,
   "matrix": {
     "B01-fabricated-metric": {
@@ -104,12 +104,63 @@
         "GATED-UNAPPROVED-EXEC"
       ]
     },
+    "B15-template-nonconformant": {
+      "expect": "fail",
+      "ok": true,
+      "codes": [
+        "TEMPLATE-NONCONFORMANT"
+      ]
+    },
+    "B16-compound-violations": {
+      "expect": "fail",
+      "ok": true,
+      "codes": [
+        "R2-NONNUMERIC",
+        "R5-BAD-STATUS",
+        "R8-SECRET"
+      ]
+    },
+    "B17-config-placeholder": {
+      "expect": "fail",
+      "ok": true,
+      "codes": [
+        "CONFIG-BAD-ENUM",
+        "CONFIG-PLACEHOLDER"
+      ]
+    },
+    "B18-config-autoprotect": {
+      "expect": "fail",
+      "ok": true,
+      "codes": [
+        "R3-PROTECTED"
+      ]
+    },
     "G01-clean-run": {
       "expect": "pass",
       "ok": true,
       "codes": []
     },
     "G02-no-findings-valid": {
+      "expect": "pass",
+      "ok": true,
+      "codes": []
+    },
+    "G03-protected-prose-precision": {
+      "expect": "pass",
+      "ok": true,
+      "codes": []
+    },
+    "G04-redaction-prose-precision": {
+      "expect": "pass",
+      "ok": true,
+      "codes": []
+    },
+    "G05-adversarial-formatting": {
+      "expect": "pass",
+      "ok": true,
+      "codes": []
+    },
+    "G06-minimal-valid": {
       "expect": "pass",
       "ok": true,
       "codes": []

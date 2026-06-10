@@ -3,7 +3,7 @@
 ## Loop 1 — 2026-06-10
 
 ### Scope & method
-- Depth: standard | Severity floor: High | Vectors: Security, Testing
+- Mode: gated | Depth: standard | Severity floor: High | Vectors: Security, Testing
 
 Approved: L1-T1
 
@@ -20,3 +20,9 @@ all actions pinned ✔
 $ npm run e2e
 12 passed
 ```
+
+### Benchmark table
+
+| Metric | Baseline | Target | Verify command |
+|---|---|---|---|
+| Suite wall time | UNMEASURED (fixture repo has no test runner) | No external benchmark applicable | — |

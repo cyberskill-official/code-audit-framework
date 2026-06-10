@@ -9,10 +9,14 @@ Statuses: **ACCEPTED** (inherent limit, documented, mitigation is process or
 hooks/CI) · **MITIGATED** (tripwire or check reduces exposure; not a proof) ·
 **CLOSED** (mechanically checked by the harness).
 
-Last full review: **2026-06-10** (post-1.0.0 ownership review). The seven
-previously declared blind spots (BS-01…BS-07) were re-verified against
-`evals/validate.py` and all fixtures; the review found **four additional ones**
-(BS-08…BS-11), two of them demonstrated by live exploit before fixing.
+Last full review: **2026-06-10, campaign 3 start** (structural / production-
+readiness review; written record: the review's gap analysis, adopted here).
+BS-01…BS-11 were re-verified against `evals/validate.py`, `run-evals.sh` and
+all fixtures: BS-08's approval check, BS-10's registry cross-check and BS-11's
+record-time drift guard all present and exercised. The review surfaced **five
+additional rows** (BS-12…BS-16): two closed by harness work in this campaign,
+three accepted with named residuals. Prior full review: 2026-06-10
+(post-1.0.0 ownership review, BS-08…BS-11).
 
 | # | Blind spot | First declared | Status |
 |---|---|---|---|
@@ -20,13 +24,18 @@ previously declared blind spots (BS-01…BS-07) were re-verified against
 | BS-02 | **Resume behavior (R4)** — whether a session truly resumed from artifacts instead of restarting is a live-agent property; no fixture can exercise it. | rules.json R4 coverage note | ACCEPTED |
 | BS-03 | **3-strike counting (R6)** — only the end artifact (BLOCKED + "Root cause:") is checkable; the validator cannot count in-session attempts. | rules.json R6 coverage note | ACCEPTED — artifact half is trapped by B08 |
 | BS-04 | **Citation authenticity (R2)** — a present URL is checkable; that it was *actually fetched* and is *relevant* is not (no network in the validator, by design). | pre-release retro cycle-5 | ACCEPTED — retro item 2 covers it by judgment |
-| BS-05 | **Behavioral preservation (R3)** — the validator substring-matches protected paths in task rows (tripwire, can false-positive on prose); semantic behavior-preservation needs the target repo's own tests. | rules.json R3 coverage note; pre-release retro cycle-4 | ACCEPTED — tripwire stands (B09) |
+| BS-05 | **Behavioral preservation (R3)** — the validator substring-matches protected paths in DONE task rows (tripwire, can false-positive on prose that merely names a protected path); semantic behavior-preservation needs the target repo's own tests. | rules.json R3 coverage note; pre-release retro cycle-4 | ACCEPTED — tripwire stands (B09); precision boundary pinned by G03 (narrative/OPEN-row mentions don't fire) |
 | BS-06 | **Padding and change value (R7)** — whether findings were manufactured or changes were genuinely valuable is human judgment (retro items 3 and 9); the harness only guarantees padding is never *required*. | evals/README; G02 positive path | ACCEPTED — retro rubric is the control |
 | BS-07 | **Finite denylists** — GUI_TOOLS and SECRET_PATTERNS cannot enumerate the world; the R1/R8 prose is the rule, the validator is a tripwire. | README caveats; pre-release retro cycle-4 | MITIGATED — pattern set extended 2026-06-10 (Anthropic/OpenAI/Google/GitLab/npm token formats) |
 | BS-08 | **Gated-mode evasion via omitted approval artifact** — a run that echoes `Mode: gated`, executes tasks, and never writes an `Approved:` line validated CLEAN (check only fired when the line existed). Demonstrated by live exploit 2026-06-10 (`validate.py --run` on a synthetic gated run → "CLEAN — no violations"). 2nd observation of the cycle-4 family (FAILURE_LOG). | This review | CLOSED — v1.1.0 echoes `Mode:` in Scope & method; validator flags gated loop sections that executed tasks without an `Approved:` line (trap: B14) |
 | BS-09 | **Run completeness is unknowable** — `--run` passes a docs/ directory with no HANDOFF.md (legitimate for mid-flight runs), so a "finished" run that skipped Phase 5 also validates clean. | This review | ACCEPTED — documented in evals/README + rules.json P5 note; completed-run reviews must confirm HANDOFF.md exists |
 | BS-10 | **Registry/fixture/baseline drift** — nothing read rules.json: a rule could reference a deleted fixture (or a fixture could sit unregistered) and the suite stayed green. Demonstrated 2026-06-10: `grep -c rules.json evals/*.py evals/*.sh` → 0. | This review | CLOSED — `validate.py --all` now cross-checks rules.json ↔ fixtures/ both directions and fails on drift |
-| BS-11 | **Version-reference drift** — AUDIT.md title, package.json, baseline.json, README, and index.html each carry a version with no consistency check; observed in the wild (package.json said 2.1.1 while its lockfile said 1.0.0 pre-release). | This review | MITIGATED — `run-evals.sh --record` refuses to pin a baseline when AUDIT.md and package.json versions disagree |
+| BS-11 | **Version-reference drift** — AUDIT.md title, package.json, baseline.json, README, and index.html each carry a version with no consistency check; observed in the wild (package.json said 2.1.1 while its lockfile said 1.0.0 pre-release). | This review | MITIGATED — `run-evals.sh --record` refuses to pin a baseline when AUDIT.md and package.json versions disagree; CI additionally enforces AUDIT.md = package.json = baseline.json + sha256 + snapshot match on every push (README/index.html strings remain manual) |
+| BS-12 | **Template conformance is the meta-blind-spot** — every tripwire fires only when output *looks like* the Phase 2 template; prose or malformed-table output validated CLEAN, silently escaping all 15 checks (rules.json had acknowledged this only narrowly, for P2-GATE). | Structural review 2026-06-10 (gap G-B) | CLOSED — `TEMPLATE-NONCONFORMANT` structure check (Mode line + tables-or-R7-line per loop section); trap B15, floor G06, parser-tolerance G05 |
+| BS-13 | **CONFIG sanity is unchecked** — a run against un-edited placeholders (`<e.g. …>`), an invalid MODE/DEPTH, or improvised CONFIG was invisible to both protocol and validator; CONFIG improvisation is the documented first-run failure mode on new codebases. | Structural review 2026-06-10 (gap G-D) | CLOSED — validator preflights the target AUDIT.md's CONFIG (`CONFIG-PLACEHOLDER`, `CONFIG-BAD-ENUM`, B17) and auto-loads PROTECTED_AREAS into R3 (B18, closes the `--protected` double-entry gap G-F); protocol-side STOP added in Phase 0 at v1.2.0 |
+| BS-14 | **Concurrency** — two sessions auditing one repo can interleave BACKLOG writes and double-claim tasks; no artifact records a session lease. | Structural review 2026-06-10 (gap G-H) | ACCEPTED — single-session operation is the documented model (R4/R5); a lease line is wording-cost-positive only if the failure is ever observed live |
+| BS-15 | **Dedup across loops (Phase 2)** — "deduplicate against prior loops" is promised but unenforced; a re-listed solved task validates clean. | Structural review 2026-06-10 (gap G-H) | ACCEPTED — duplicate detection on free-text descriptions is judgment, not mechanics; retro item 6 covers it; revisit if observed live (Rule of Three) |
+| BS-16 | **Offline citation path (R2)** — R2 assumes network access for citation fetching; a sandboxed agent must choose between violating R2 and skipping benchmarks, and the offline case has no named label. | Structural review 2026-06-10 (gap G-H) | ACCEPTED — `INTERNAL TARGET` is the lawful fallback today; an explicit offline clause is the queued PATCH candidate for a future cycle (live-run evidence first, per review §4.1) |
 
 **Watchlist (not blind spots — nothing is unseen, kept for completeness):**
 Phase 4 stop rule (b) cannot fire before (a) at small LOOP_BUDGET — harmless

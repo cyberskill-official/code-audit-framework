@@ -3,7 +3,7 @@
 ## Loop 1 — 2026-06-10
 
 ### Scope & method
-- Depth: standard | Severity floor: High | Vectors: Performance
+- Mode: autonomous | Depth: standard | Severity floor: High | Vectors: Performance
 - Benchmark basis: internal
 
 ### Benchmark table

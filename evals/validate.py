@@ -19,11 +19,24 @@ machine-checkable subset of AUDIT.md's core rules:
   P5-NO-STOP-REASON  HANDOFF.md does not cite which stop condition fired
   HANDOFF-BAD-MSTATUS  metrics Status outside the closed metric-status set
   GATED-UNAPPROVED-EXEC  executed task not on the loop's `Approved:` line (gated mode)
+  TEMPLATE-NONCONFORMANT BACKLOG.md does not follow the Phase 2 template, so the
+                     rule tripwires above cannot see it (BLINDSPOTS BS-12)
+  CONFIG-PLACEHOLDER a CONFIG value in the target's AUDIT.md still contains
+                     unedited <placeholder> text (Phase 0 preflight)
+  CONFIG-BAD-ENUM    MODE / DEPTH / BENCHMARK_MODE / SEVERITY_FLOOR outside its
+                     allowed set (Phase 0 preflight)
 
 A loop with zero findings is VALID (R7): absence of tasks is never a violation.
 
+When the run directory (or its parent, if you point --run at docs/ itself)
+contains the target's AUDIT.md, the CONFIG block is preflighted and
+PROTECTED_AREAS is loaded from it automatically — `--protected` then extends
+rather than replaces it (closes the double-entry gap, review item G-F).
+
 Usage:
   python3 evals/validate.py --run <dir-containing-docs>  [--protected p1,p2]
+  python3 evals/validate.py --run <dir> --report json    # structured findings export
+  python3 evals/validate.py --run <dir> --report sarif   # GitHub code-scanning format
   python3 evals/validate.py --all          # run every fixture, compare to expectations
   python3 evals/validate.py --all --json   # machine-readable results
 
@@ -75,12 +88,21 @@ URL_RE = re.compile(r"https?://\S+")
 STOP_RE = re.compile(r"Stop condition:\s*\(?[abc]\)?", re.IGNORECASE)
 
 
+CELL_SPLIT_RE = re.compile(r"(?<!\\)\|")  # an escaped \| is cell CONTENT, not a separator
+
+
 def norm(cell: str) -> str:
     """Strip markdown wrapping without mangling shell syntax: backticks go
     everywhere, but * and _ are stripped only at the edges (emphasis), so
-    commands like `wc -l src/*.py` survive intact."""
-    s = cell.strip().replace("`", "")
+    commands like `wc -l src/*.py` survive intact. Escaped pipes (\\|) are
+    unescaped back to literal | so commands like `grep -cE "TODO\\|FIXME"`
+    round-trip to what the agent actually ran (fixture G05)."""
+    s = cell.strip().replace("`", "").replace("\\|", "|")
     return re.sub(r"^[*_]+|[*_]+$", "", s).strip()
+
+
+def split_cells(line: str):
+    return [norm(c) for c in CELL_SPLIT_RE.split(line.strip().strip("|"))]
 
 
 def parse_tables(text: str):
@@ -90,10 +112,10 @@ def parse_tables(text: str):
     while i < len(lines):
         line = lines[i].strip()
         if line.startswith("|") and i + 1 < len(lines) and re.match(r"^\|[\s:|-]+\|?$", lines[i + 1].strip()):
-            header = [norm(c) for c in line.strip("|").split("|")]
+            header = split_cells(line)
             rows, j = [], i + 2
             while j < len(lines) and lines[j].strip().startswith("|"):
-                cells = [norm(c) for c in lines[j].strip().strip("|").split("|")]
+                cells = split_cells(lines[j])
                 if any(cells):
                     rows.append(cells)
                 j += 1
@@ -268,17 +290,106 @@ def check_secrets(text, violations, src):
             violations.append(("R8-SECRET", src, f"unredacted {kind} matching '{m.group(0)[:12]}…'"))
 
 
+MODE_LINE_RE = re.compile(r"(?mi)^\s*-?\s*Mode:\s*\S+")
+NO_FINDINGS_RE = re.compile(r"No significant findings", re.IGNORECASE)
+
+
+def check_template_conformance(text, violations, src):
+    """BLINDSPOTS BS-12 — the meta-tripwire. Every other check activates only
+    when output LOOKS like the Phase 2 template (pipe tables, headings, Mode
+    echo); a run that emits prose instead silently escapes all of them. This
+    converts that silent escape into a violation, making the rest of the rule
+    set load-bearing. Per loop section the template requires a `Mode:` line in
+    Scope & method, and EITHER (benchmark table AND task table) OR the R7
+    "No significant findings" line (a tabled-baselines-but-no-tasks loop also
+    carries that line, so benchmark-table-only sections remain conformant)."""
+    sections = re.split(r"(?m)^##\s+(?=Loop\b)", text)[1:]
+    if not sections:
+        violations.append(("TEMPLATE-NONCONFORMANT", src,
+                           "no '## Loop <N>' section found — output does not follow the Phase 2 template"))
+        return
+    for sec in sections:
+        loop_id = (sec.splitlines() or ["?"])[0].strip()
+        if not MODE_LINE_RE.search(sec):
+            violations.append(("TEMPLATE-NONCONFORMANT", src,
+                               f"'{loop_id}': Scope & method has no 'Mode:' line (required since v1.1.0)"))
+        tables = list(parse_tables(sec))
+        has_bench = any(col(h, "metric") is not None and col(h, "baseline") is not None for h, _, _ in tables)
+        has_task = any(col(h, "id") is not None and col(h, "status") is not None
+                       and col(h, "metric") is None for h, _, _ in tables)
+        if not (has_bench and has_task) and not NO_FINDINGS_RE.search(sec):
+            violations.append(("TEMPLATE-NONCONFORMANT", src,
+                               f"'{loop_id}': missing benchmark and/or task table and no 'No significant findings' line"))
+
+
+CONFIG_ENUMS = {
+    "MODE": {"gated", "autonomous"},
+    "DEPTH": {"quick", "standard", "deep"},
+    "BENCHMARK_MODE": {"auto", "provided", "none"},
+    "SEVERITY_FLOOR": {"Critical", "High", "Medium", "Low"},
+}
+PLACEHOLDER_RE = re.compile(r"<[^<>\n]*>")
+CONFIG_KEY_RE = re.compile(r"^([A-Z][A-Z_]+):\s*(.*)$")
+
+
+def parse_audit_config(audit_md: Path):
+    """Flat KEY: value parse of the CONFIG block in a target repo's AUDIT.md.
+    Trailing `# comment` text is stripped; placeholder text is preserved."""
+    cfg, in_config = {}, False
+    for line in audit_md.read_text(encoding="utf-8").splitlines():
+        if re.match(r"^##\s*CONFIG\b", line):
+            in_config = True
+            continue
+        if in_config and re.match(r"^##\s", line):
+            break
+        if not in_config:
+            continue
+        m = CONFIG_KEY_RE.match(line.strip())
+        if not m:
+            continue
+        key, raw = m.groups()
+        cfg[key] = re.split(r"\s+#", raw, 1)[0].strip()
+    return cfg
+
+
+def check_config_preflight(target_root: Path, violations, protected):
+    """Phase 0 CONFIG preflight (review gap G-D) + PROTECTED_AREAS auto-load
+    (gap G-F). Runs only when the target's AUDIT.md is present; placeholder
+    values never silently configure anything."""
+    audit = target_root / "AUDIT.md"
+    if not audit.exists():
+        return
+    cfg = parse_audit_config(audit)
+    for key, val in cfg.items():
+        if PLACEHOLDER_RE.search(val):
+            violations.append(("CONFIG-PLACEHOLDER", "AUDIT.md",
+                               f"{key} still contains unedited template text: '{val[:60]}'"))
+        elif key in CONFIG_ENUMS and val and val not in CONFIG_ENUMS[key]:
+            violations.append(("CONFIG-BAD-ENUM", "AUDIT.md",
+                               f"{key} '{val}' not in {sorted(CONFIG_ENUMS[key])}"))
+    areas = cfg.get("PROTECTED_AREAS", "")
+    if areas and not PLACEHOLDER_RE.search(areas):
+        for p in areas.split(","):
+            p = p.strip()
+            if p and p not in protected:
+                protected.append(p)
+
+
 def validate_run(run_dir: Path, protected=None):
     """Validate one run directory (containing docs/BACKLOG.md, docs/HANDOFF.md)."""
-    protected = protected or []
+    protected = list(protected or [])
     violations = []
     docs = run_dir / "docs" if (run_dir / "docs").is_dir() else run_dir
+    # The target repo's root is docs/'s parent — whether --run was pointed at
+    # the repo root or at docs/ itself. CONFIG preflight may extend `protected`.
+    check_config_preflight(docs.parent, violations, protected)
     backlog = docs / "BACKLOG.md"
     handoff = docs / "HANDOFF.md"
     if not backlog.exists():
         violations.append(("MISSING-FILE", "docs/BACKLOG.md", "file not found"))
     if backlog.exists():
         text = backlog.read_text(encoding="utf-8")
+        check_template_conformance(text, violations, "BACKLOG.md")
         check_secrets(text, violations, "BACKLOG.md")
         check_approvals(text, violations, "BACKLOG.md")
         for header, rows, end in parse_tables(text):
@@ -297,6 +408,129 @@ def validate_run(run_dir: Path, protected=None):
             elif col(header, "status") is not None and col(header, "id") is not None:
                 check_task_table(header, rows, violations, "HANDOFF.md", protected)
     return violations
+
+
+LOOP_HEAD_RE = re.compile(r"^Loop\s+(\d+)\s*(?:—|-)?\s*(.*)$")
+
+
+def build_report(run_dir: Path, protected, violations):
+    """Findings export (review gap G-G): one structured object per run, for
+    roll-ups across projects, trend dashboards, and client-facing summaries.
+    Parses the same artifacts the validator checks — no second source of truth."""
+    import datetime
+    docs = run_dir / "docs" if (run_dir / "docs").is_dir() else run_dir
+    audit = docs.parent / "AUDIT.md"
+    protocol_version = None
+    protected = list(protected)
+    if audit.exists():
+        m = re.search(r"v\d+\.\d+\.\d+", audit.read_text(encoding="utf-8").splitlines()[0])
+        protocol_version = m.group(0) if m else None
+        check_config_preflight(docs.parent, [], protected)  # mirror the auto-load; violations already counted
+    report = {
+        "schema": "code-audit-framework/report@1",
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        "run_dir": str(run_dir),
+        "protocol_version": protocol_version,
+        "protected_areas": protected,
+        "loops": [],
+        "metrics": [],
+        "summary": {},
+    }
+    backlog = docs / "BACKLOG.md"
+    if backlog.exists():
+        text = backlog.read_text(encoding="utf-8")
+        for sec in re.split(r"(?m)^##\s+(?=Loop\b)", text)[1:]:
+            first = (sec.splitlines() or [""])[0]
+            hm = LOOP_HEAD_RE.match(first.strip())
+            mode_m = re.search(r"(?mi)^\s*-?\s*Mode:\s*(\S+)", sec)
+            appr_m = APPROVED_RE.search(sec)
+            loop = {
+                "loop": int(hm.group(1)) if hm else None,
+                "date": (hm.group(2).strip() or None) if hm else None,
+                "mode": mode_m.group(1) if mode_m else None,
+                "approved": ([] if appr_m.group(1).strip().lower() == "none"
+                             else [norm(x) for x in appr_m.group(1).split(",") if x.strip()]) if appr_m else None,
+                "no_significant_findings": bool(NO_FINDINGS_RE.search(sec)),
+                "tasks": [],
+            }
+            for header, rows, _ in parse_tables(sec):
+                ii, st_i = col(header, "id"), col(header, "status")
+                if ii is None or st_i is None or col(header, "metric") is not None:
+                    continue
+                sev_i, vec_i, d_i, v_i = (col(header, "sev"), col(header, "vector"),
+                                          col(header, "description"), col(header, "verify"))
+                for r in rows:
+                    def cell(ix):
+                        return r[ix] if ix is not None and ix < len(r) else ""
+                    if cell(ii):
+                        loop["tasks"].append({
+                            "id": cell(ii), "severity": cell(sev_i), "status": cell(st_i),
+                            "vector": cell(vec_i), "description": cell(d_i), "verify": cell(v_i),
+                        })
+            report["loops"].append(loop)
+    handoff = docs / "HANDOFF.md"
+    if handoff.exists():
+        text = handoff.read_text(encoding="utf-8")
+        for header, rows, _ in parse_tables(text):
+            mi, fi = col(header, "metric"), col(header, "final")
+            if mi is None or fi is None:
+                continue
+            bi, di, ti, vi, si = (col(header, "baseline"), col(header, "delta"),
+                                  col(header, "target"), col(header, "verify"), col(header, "status"))
+            for r in rows:
+                def cell(ix):
+                    return r[ix] if ix is not None and ix < len(r) else ""
+                if cell(mi):
+                    report["metrics"].append({
+                        "metric": cell(mi), "baseline": cell(bi), "final": cell(fi),
+                        "delta": cell(di), "target": cell(ti), "verify": cell(vi), "status": cell(si),
+                    })
+    tasks = [t for l in report["loops"] for t in l["tasks"]]
+    by = lambda key: {k: sum(1 for t in tasks if t[key] == k)  # noqa: E731
+                      for k in sorted({t[key] for t in tasks if t[key]})}
+    vio_codes = {}
+    for c, _, _ in violations:
+        vio_codes[c] = vio_codes.get(c, 0) + 1
+    report["summary"] = {
+        "loops": len(report["loops"]),
+        "tasks": len(tasks),
+        "tasks_by_status": by("status"),
+        "tasks_by_severity": by("severity"),
+        "metrics_measured": sum(1 for m in report["metrics"] if m["status"] == "MEASURED"),
+        "violations": len(violations),
+        "violations_by_code": dict(sorted(vio_codes.items())),
+        "clean": not violations,
+    }
+    report["violations"] = [{"code": c, "file": s, "detail": d} for c, s, d in violations]
+    return report
+
+
+def to_sarif(report):
+    """Minimal SARIF 2.1.0 for GitHub code scanning (review F5, optional output)."""
+    rules, results = {}, []
+    for v in report["violations"]:
+        rules.setdefault(v["code"], {"id": v["code"], "name": v["code"],
+                                     "shortDescription": {"text": v["code"]}})
+        results.append({
+            "ruleId": v["code"],
+            "level": "error",
+            "message": {"text": v["detail"]},
+            "locations": [{"physicalLocation": {"artifactLocation": {"uri": f"docs/{v['file']}"
+                          if not v["file"].endswith("AUDIT.md") else v["file"]}}}],
+        })
+    return {
+        "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [{
+            "tool": {"driver": {
+                "name": "code-audit-framework",
+                "informationUri": "https://github.com/cyberskill-official/code-audit-framework",
+                "version": (report.get("protocol_version") or "unknown").lstrip("v"),
+                "rules": list(rules.values()),
+            }},
+            "results": results,
+        }],
+    }
 
 
 def load_fixture_meta(fdir: Path):
@@ -383,13 +617,19 @@ def main():
     ap.add_argument("--run", help="validate one run directory (containing docs/)")
     ap.add_argument("--all", action="store_true", help="run the full fixture suite")
     ap.add_argument("--json", action="store_true")
-    ap.add_argument("--protected", default="", help="comma-separated protected paths")
+    ap.add_argument("--report", choices=["json", "sarif"],
+                    help="with --run: emit a structured findings report instead of plain violations")
+    ap.add_argument("--protected", default="", help="comma-separated protected paths (extends the target AUDIT.md's PROTECTED_AREAS)")
     args = ap.parse_args()
     if args.all:
         sys.exit(run_all(as_json=args.json))
     if args.run:
-        v = validate_run(Path(args.run), protected=[p for p in args.protected.split(",") if p])
-        if args.json:
+        protected = [p for p in args.protected.split(",") if p]
+        v = validate_run(Path(args.run), protected=protected)
+        if args.report:
+            report = build_report(Path(args.run), protected, v)
+            print(json.dumps(to_sarif(report) if args.report == "sarif" else report, indent=2))
+        elif args.json:
             print(json.dumps([{"code": c, "file": s, "detail": d} for c, s, d in v], indent=2))
         else:
             for c, s, d in v:

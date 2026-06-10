@@ -14,6 +14,7 @@
       ],
       "fixtures_exercising": [
         "G01-clean-run",
+        "G05-adversarial-formatting",
         "B01-fabricated-metric",
         "B02-gui-tool-verify",
         "B10-unmeasured-no-reason",
@@ -29,9 +30,12 @@
       ],
       "fixtures_exercising": [
         "G01-clean-run",
+        "G04-redaction-prose-precision",
         "B03-uncited-sota",
-        "B04-nonnumeric-target"
-      ]
+        "B04-nonnumeric-target",
+        "B16-compound-violations"
+      ],
+      "coverage_note": "Banned-word matching is exact on the normalized Target cell only; the same words in prose are legitimate (precision fixture G04)."
     },
     {
       "rule_id": "R3",
@@ -40,9 +44,11 @@
         "R3-PROTECTED"
       ],
       "fixtures_exercising": [
-        "B09-protected-area-touched"
+        "B09-protected-area-touched",
+        "B18-config-autoprotect",
+        "G03-protected-prose-precision"
       ],
-      "coverage_note": "Validator checks task rows against fixture-declared protected_areas. Behavioral preservation itself is NOT machine-checkable here \u2014 enforce with tests/hooks in the target repo."
+      "coverage_note": "Validator checks DONE task rows against protected areas (fixture-declared, --protected, or auto-loaded from the target AUDIT.md's CONFIG \u2014 B18). Scoped to DONE rows so narrative/OPEN-row mentions don't over-fire (G03); a DONE row whose prose merely NAMES a protected path still trips \u2014 that residual false-positive is BLINDSPOTS BS-05, accepted. Behavioral preservation itself is NOT machine-checkable here \u2014 enforce with tests/hooks in the target repo."
     },
     {
       "rule_id": "R4",
@@ -61,7 +67,8 @@
       ],
       "fixtures_exercising": [
         "G01-clean-run",
-        "B05-bad-status"
+        "B05-bad-status",
+        "B16-compound-violations"
       ]
     },
     {
@@ -93,8 +100,11 @@
       ],
       "fixtures_exercising": [
         "G01-clean-run",
-        "B07-secret-leak"
-      ]
+        "G04-redaction-prose-precision",
+        "B07-secret-leak",
+        "B16-compound-violations"
+      ],
+      "coverage_note": "Pattern set is a finite denylist (BLINDSPOTS BS-07). A [REDACTED:kind] marker suppresses matches only within a 40-char context window; a raw value far from any marker still trips (B16)."
     },
     {
       "rule_id": "P2-GATE",
@@ -107,7 +117,33 @@
         "B12-gated-unapproved-exec",
         "B14-gated-missing-approval"
       ],
-      "coverage_note": "Fires when a loop section carries an `Approved:` line OR echoes `Mode: gated` (v1.1.0 closed the omitted-line evasion, BLINDSPOTS BS-08). Residual: a run that suppresses the Mode echo entirely is template-noncompliant and out of tripwire reach; autonomous runs carry no gate."
+      "coverage_note": "Fires when a loop section carries an `Approved:` line OR echoes `Mode: gated` (v1.1.0 closed the omitted-line evasion, BLINDSPOTS BS-08). A run that suppresses the Mode echo entirely is now caught by TEMPLATE-NONCONFORMANT (BS-12) instead of escaping; autonomous runs carry no gate."
+    },
+    {
+      "rule_id": "TEMPLATE",
+      "anchor": "PHASE 2 — WRITE THE BACKLOG (exact template)",
+      "violation_codes": [
+        "TEMPLATE-NONCONFORMANT"
+      ],
+      "fixtures_exercising": [
+        "B15-template-nonconformant",
+        "G05-adversarial-formatting",
+        "G06-minimal-valid"
+      ],
+      "coverage_note": "The meta-tripwire (BLINDSPOTS BS-12): every other check activates only when output looks like the template, so non-template output used to escape ALL of them. Requires per loop section: a Mode: line, and (benchmark table AND task table) OR the R7 no-significant-findings line. G06 pins the floor (the template and nothing more); G05 pins parser tolerance for human-valid formatting."
+    },
+    {
+      "rule_id": "P0-CONFIG",
+      "anchor": "PHASE 0 — RECOVER STATE (CONFIG preflight, v1.2.0)",
+      "violation_codes": [
+        "CONFIG-PLACEHOLDER",
+        "CONFIG-BAD-ENUM"
+      ],
+      "fixtures_exercising": [
+        "B17-config-placeholder",
+        "B18-config-autoprotect"
+      ],
+      "coverage_note": "Runs only when the target repo's AUDIT.md sits next to docs/ (true for --run on a real target; fixtures opt in by shipping an AUDIT.md). Placeholder = any <...> remnant; enums checked for MODE / DEPTH / BENCHMARK_MODE / SEVERITY_FLOOR. PROTECTED_AREAS auto-loads into the R3 tripwire (B18), closing the --protected double-entry gap. The protocol-side STOP lives in Phase 0 (v1.2.0); the validator side is this mechanical check."
     },
     {
       "rule_id": "P5",
