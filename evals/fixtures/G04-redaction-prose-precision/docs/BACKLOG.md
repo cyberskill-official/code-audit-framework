@@ -3,7 +3,7 @@
 ## Loop 1 — 2026-06-10
 
 ### Scope & method
-- Mode: autonomous | Depth: standard | Severity floor: High | Vectors: Security, Maintainability
+- Protocol: v1.3.0 | Mode: autonomous | Depth: standard | Severity floor: High | Vectors: Security, Maintainability
 - Benchmark basis: internal — High-priority security pass on an internal CLI; minimal external surface
 - Note: rotating leaked credentials was the trigger for this loop; all values below are redacted per R8.
 

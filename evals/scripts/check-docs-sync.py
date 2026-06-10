@@ -53,6 +53,11 @@ def main():
         if not pm or pm.group(1) != bare:
             problems.append(f"pyproject.toml version {pm.group(1) if pm else '(missing)'} != {bare}")
 
+    validator = (ROOT / "evals" / "code_audit_validator.py").read_text(encoding="utf-8")
+    vm = re.search(r"CURRENT_PROTOCOL\s*=\s*\((\d+),\s*(\d+),\s*(\d+)\)", validator)
+    if not vm or "v" + ".".join(vm.groups()) != ver:
+        problems.append(f"code_audit_validator.py CURRENT_PROTOCOL {'v' + '.'.join(vm.groups()) if vm else '(missing)'} != {ver} — version-aware template gating out of lockstep")
+
     baseline = json.loads((ROOT / "evals" / "baseline.json").read_text(encoding="utf-8"))
     if baseline.get("audit_md_version") != ver:
         problems.append(f"baseline.json audit_md_version {baseline.get('audit_md_version')} != {ver}")

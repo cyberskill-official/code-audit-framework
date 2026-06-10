@@ -3,7 +3,7 @@
 ## Loop 1 — 2026-06-10
 
 ### Scope & method
-- Mode: gated | Depth: standard | Severity floor: High | Vectors: Security
+- Protocol: v1.3.0 | Mode: gated | Depth: standard | Severity floor: High | Vectors: Security
 - Benchmark basis: internal — no comparator exists for this domain
 
 ### Benchmark table

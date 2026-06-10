@@ -3,7 +3,7 @@
 ## Loop 1 — 2026-06-10
 
 ### Scope & method
-- Mode: autonomous | Depth: standard | Severity floor: High | Vectors: Performance, Security, Testing
+- Protocol: v1.3.0 | Mode: autonomous | Depth: standard | Severity floor: High | Vectors: Performance, Security, Testing
 - Benchmark basis: internal — no public comparator for this internal tool
 
 ### Benchmark table

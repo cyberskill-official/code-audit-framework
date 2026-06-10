@@ -15,6 +15,13 @@ Versioning: **MAJOR.MINOR.PATCH**
 
 ---
 
+## v1.3.0 — 2026-06-10 (improvement campaign 4, cycle 1)
+
+- **MINOR: The backlog now echoes its protocol version.** Phase 2's "Scope & method" template line opens with `Protocol: <this file's title version>`, making every artifact self-describing. The validator gates template requirements on the stated version (a v1.0.0 artifact is judged by the v1.0.0 template — no Mode echo required; a current artifact omitting the echo is itself nonconformant), which makes mixed-version artifact fleets validate correctly from v1.3.0 forward. Net protocol size change: 0 lines (edit to an existing template line; AUDIT.md remains 164 lines).
+- **Trigger:** Architect review 2026-06-10, finding F-5 (version skew) — artifacts don't state which protocol produced them, so the validator assumed the current template and false-positived on older runs. Second observation of the self-describing-artifact family (first: campaign-2's Mode echo, v1.1.0) — promotion bar met. FAILURE_LOG row promoted this cycle.
+- **Harness, same cycle:** version-aware `check_template_conformance` (`CURRENT_PROTOCOL` kept in lockstep by check-docs-sync); trap `B24-missing-protocol-echo`; precision sibling `G10-legacy-version-artifact` (stated v1.0.0, no Mode echo → clean). All 30 template-conformant fixtures strengthened to the v1.3.0 Scope line. Evals: **34/34 green**, baseline re-recorded at v1.3.0.
+- **Also in campaign 4 (infra, landed before this cycle):** the calibration sprint from the architect review — fence-aware parsing (F-1: quoted tool output neither trips checks nor satisfies the template; G07/B19), the Final-column escape closed (F-2: column shape selects semantics, never disables checks; B20), artifact problems became verdicts (F-3: `MALFORMED-FILE`, never tracebacks; B21), CONFIG-preflight precision (F-4: generics/redirection/`#`-values stay valid; G08), waivers v1 (`docs/AUDIT-WAIVERS.yaml` — audit-trailed, expiring suppressions; G09/B22), `--aggregate` portfolio roll-up, published report schema (`schemas/report.v1.json`, CI-validated), redaction-distance behavior pinned (B23), COMPLIANCE.md control mapping, air-gap property documented.
+
 ## v1.2.0 — 2026-06-10 (improvement campaign 3, cycle 1)
 
 - **MINOR: Phase 0 gains a CONFIG preflight.** Three lines: if any CONFIG value still contains `<placeholder>` text, or MODE / DEPTH / BENCHMARK_MODE / SEVERITY_FLOOR is outside its allowed set, the agent STOPs and asks the human instead of improvising CONFIG. Closes the most likely first-run failure mode on a new codebase: a half-filled CONFIG silently "completed" by the agent, which then audits against invented constraints.

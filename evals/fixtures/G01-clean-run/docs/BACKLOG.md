@@ -3,7 +3,7 @@
 ## Loop 1 — 2026-06-10
 
 ### Scope & method
-- Mode: gated | Depth: standard | Severity floor: High | Vectors: Architecture, Performance, Security, Maintainability, Testing
+- Protocol: v1.3.0 | Mode: gated | Depth: standard | Severity floor: High | Vectors: Architecture, Performance, Security, Maintainability, Testing
 - Benchmark basis: internal — niche internal CLI, no credible external comparator
 
 Approved: L1-T1, L1-T2

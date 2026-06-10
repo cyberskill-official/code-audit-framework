@@ -19,6 +19,7 @@
         "properties": {
           "loop": { "type": ["integer", "null"] },
           "date": { "type": ["string", "null"] },
+          "protocol": { "type": ["string", "null"], "pattern": "^v\\d+\\.\\d+\\.\\d+$" },
           "mode": { "type": ["string", "null"] },
           "approved": { "type": ["array", "null"], "items": { "type": "string" } },
           "no_significant_findings": { "type": "boolean" },

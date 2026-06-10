@@ -3,7 +3,7 @@
 ## Loop 1 — 2026-06-10
 
 ### Scope & method
-- Mode: autonomous | Depth: standard | Severity floor: High | Vectors: (fixture)
+- Protocol: v1.3.0 | Mode: autonomous | Depth: standard | Severity floor: High | Vectors: (fixture)
 
 ### Task table
 

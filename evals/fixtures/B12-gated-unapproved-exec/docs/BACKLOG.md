@@ -3,7 +3,7 @@
 ## Loop 1 — 2026-06-10
 
 ### Scope & method
-- Mode: gated | Depth: standard | Severity floor: High | Vectors: Security, Testing
+- Protocol: v1.3.0 | Mode: gated | Depth: standard | Severity floor: High | Vectors: Security, Testing
 
 Approved: L1-T1
 

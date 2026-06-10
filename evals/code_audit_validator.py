@@ -273,7 +273,9 @@ def check_task_table(header, rows, violations, src, protected):
 
 
 APPROVED_RE = re.compile(r"^Approved:\s*(.+)$", re.MULTILINE)
-MODE_GATED_RE = re.compile(r"(?mi)^\s*-?\s*Mode:\s*gated\b")
+# `Mode:` may open the Scope line or follow another field (`Protocol: … | Mode: …`
+# since v1.3.0) — match at line start or after a `|` separator, never mid-prose.
+MODE_GATED_RE = re.compile(r"(?mi)(?:^|\|)\s*-?\s*Mode:\s*gated\b")
 EXECUTED_STATUSES = {"DONE", "IN-PROGRESS", "BLOCKED"}
 
 
@@ -318,8 +320,18 @@ def check_secrets(text, violations, src):
             violations.append(("R8-SECRET", src, f"unredacted {kind} matching '{m.group(0)[:12]}…'"))
 
 
-MODE_LINE_RE = re.compile(r"(?mi)^\s*-?\s*Mode:\s*\S+")
+MODE_LINE_RE = re.compile(r"(?mi)(?:^|\|)\s*-?\s*Mode:\s*\S+")
+PROTO_LINE_RE = re.compile(r"(?mi)(?:^|\|)\s*-?\s*Protocol:\s*v(\d+)\.(\d+)\.(\d+)\b")
 NO_FINDINGS_RE = re.compile(r"No significant findings", re.IGNORECASE)
+
+# The template requirements this validator enforces, keyed to the protocol
+# release it ships with (kept in lockstep by check-docs-sync.py). Artifacts
+# that echo an older `Protocol:` are judged by THAT version's template —
+# version-aware validation, architect review F-5. Artifacts without the echo
+# are assumed current (and, from v1.3.0 on, flagged for omitting it).
+CURRENT_PROTOCOL = (1, 3, 0)
+MODE_ECHO_SINCE = (1, 1, 0)
+PROTO_ECHO_SINCE = (1, 3, 0)
 
 
 def check_template_conformance(text, violations, src):
@@ -327,10 +339,11 @@ def check_template_conformance(text, violations, src):
     when output LOOKS like the Phase 2 template (pipe tables, headings, Mode
     echo); a run that emits prose instead silently escapes all of them. This
     converts that silent escape into a violation, making the rest of the rule
-    set load-bearing. Per loop section the template requires a `Mode:` line in
-    Scope & method, and EITHER (benchmark table AND task table) OR the R7
-    "No significant findings" line (a tabled-baselines-but-no-tasks loop also
-    carries that line, so benchmark-table-only sections remain conformant)."""
+    set load-bearing. Per loop section the template requires (since v1.3.0) a
+    `Protocol:` echo, (since v1.1.0) a `Mode:` line, and — all versions —
+    EITHER (benchmark table AND task table) OR the R7 "No significant
+    findings" line. Requirements are gated on the section's stated protocol
+    version, so older artifacts are judged by their own template (F-5)."""
     sections = re.split(r"(?m)^##\s+(?=Loop\b)", text)[1:]
     if not sections:
         violations.append(("TEMPLATE-NONCONFORMANT", src,
@@ -338,7 +351,13 @@ def check_template_conformance(text, violations, src):
         return
     for sec in sections:
         loop_id = (sec.splitlines() or ["?"])[0].strip()
-        if not MODE_LINE_RE.search(sec):
+        pm = PROTO_LINE_RE.search(sec)
+        proto = tuple(int(g) for g in pm.groups()) if pm else CURRENT_PROTOCOL
+        if pm is None and CURRENT_PROTOCOL >= PROTO_ECHO_SINCE:
+            violations.append(("TEMPLATE-NONCONFORMANT", src,
+                               f"'{loop_id}': Scope & method has no 'Protocol:' echo (required since v1.3.0; "
+                               f"artifacts from older protocol versions validate with the matching release tag)"))
+        if proto >= MODE_ECHO_SINCE and not MODE_LINE_RE.search(sec):
             violations.append(("TEMPLATE-NONCONFORMANT", src,
                                f"'{loop_id}': Scope & method has no 'Mode:' line (required since v1.1.0)"))
         tables = list(parse_tables(sec))
@@ -591,11 +610,13 @@ def build_report(run_dir: Path, protected, violations):
         for sec in re.split(r"(?m)^##\s+(?=Loop\b)", text)[1:]:
             first = (sec.splitlines() or [""])[0]
             hm = LOOP_HEAD_RE.match(first.strip())
-            mode_m = re.search(r"(?mi)^\s*-?\s*Mode:\s*(\S+)", sec)
+            mode_m = re.search(r"(?mi)(?:^|\|)\s*-?\s*Mode:\s*(\S+)", sec)
+            proto_m = PROTO_LINE_RE.search(sec)
             appr_m = APPROVED_RE.search(sec)
             loop = {
                 "loop": int(hm.group(1)) if hm else None,
                 "date": (hm.group(2).strip() or None) if hm else None,
+                "protocol": f"v{'.'.join(proto_m.groups())}" if proto_m else None,
                 "mode": mode_m.group(1) if mode_m else None,
                 "approved": ([] if appr_m.group(1).strip().lower() == "none"
                              else [norm(x) for x in appr_m.group(1).split(",") if x.strip()]) if appr_m else None,

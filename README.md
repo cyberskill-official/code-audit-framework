@@ -13,10 +13,10 @@ weakens a rule.
 
 | | |
 |---|---|
-| Protocol | [`AUDIT.md`](./AUDIT.md) — current release **v1.2.0** |
+| Protocol | [`AUDIT.md`](./AUDIT.md) — current release **v1.3.0** |
 | History | [`CHANGELOG.md`](./CHANGELOG.md) · immutable copies in [`improve/versions/`](./improve/versions/) |
 | Self-improvement | [`improve/CRITIC.md`](./improve/CRITIC.md) — one evidenced change per cycle |
-| Regression gate | [`evals/`](./evals/) — **32 fixtures, 32/32 green** at v1.2.0, stdlib-only Python; enforced in CI on every push |
+| Regression gate | [`evals/`](./evals/) — **34 fixtures, 34/34 green** at v1.3.0, stdlib-only Python; enforced in CI on every push |
 | For agents | [`AGENTS.md`](./AGENTS.md) — machine-facing operating rules for this repo |
 | License | [Apache-2.0](./LICENSE) · [`CONTRIBUTING.md`](./CONTRIBUTING.md) · [`SECURITY.md`](./SECURITY.md) |
 
@@ -226,7 +226,7 @@ regression-tested, and changed only with evidence.
    improve/CRITIC.md         ──  ONE minimal change; PATCH/MINOR/MAJOR
                   │
                   ▼
-   evals/validate.py --all   ──  32 fixtures must stay green
+   evals/validate.py --all   ──  34 fixtures must stay green
                   │
                   ▼
    CHANGELOG.md + improve/versions/AUDIT-vX.Y.Z.md  (immutable release)
@@ -273,7 +273,7 @@ Full evidence trail: [`CHANGELOG.md`](./CHANGELOG.md),
 ## The regression harness
 
 ```bash
-python3 evals/validate.py --all      # 32 fixtures: G* must pass, B* must trip
+python3 evals/validate.py --all      # 34 fixtures: G* must pass, B* must trip
 ./evals/run-evals.sh --record        # run + pin baseline.json to AUDIT.md's sha256
 python3 evals/validate.py --run DIR  # validate any real run's docs/ output
 python3 evals/validate.py --run DIR --report json   # structured findings export (or: sarif)
