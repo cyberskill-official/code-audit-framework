@@ -36,6 +36,7 @@ __pycache__/
 .windsurf/
 .zed/
 
-# Deployment & secrets
-.vercel
-.env*.local
+# Python packaging build noise
+build/
+dist/
+*.egg-info/
