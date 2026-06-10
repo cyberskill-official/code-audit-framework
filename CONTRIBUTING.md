@@ -18,7 +18,9 @@ change per cycle, every time. No exceptions, including "obvious" fixes.
   register it in `evals/rules.json`.
 - Release ritual: bump the title version → snapshot to
   `improve/versions/AUDIT-v<x.y.z>.md` → `CHANGELOG.md` entry → retro in
-  `improve/retros/` → `./evals/run-evals.sh --record`.
+  `improve/retros/` → `./evals/run-evals.sh --record` → tag `v<x.y.z>` and
+  move the floating `v1` tag to the release commit (consumers pin the Action
+  and pipx installs to it).
 
 **2. Infrastructure changes (everything else)** — validator, fixtures, CI,
 docs, product page. These land as ordinary commits and may be batched, but the
@@ -34,6 +36,12 @@ eval suite must stay green and fixture expectations may only be strengthened.
 - Never commit secrets. This repo's own artifacts must satisfy R8.
 - Keep AUDIT.md under 200 lines; if your change adds net rules, say what you
   trimmed to pay for it.
+- Docs follow changes, in the same PR: update every doc your change makes
+  stale (README, index.html, evals/README, improve/README, AGENTS.md).
+  `python3 evals/scripts/check-docs-sync.py` enforces the version and
+  fixture-count surfaces and runs in CI.
+- Leave no leftovers: temp files, orphaned dependencies, and outdated
+  references introduced by your change are part of your diff to clean.
 
 ## Before you open a PR
 

@@ -52,3 +52,6 @@ jobs:
           V="$(head -1 AUDIT.md | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')"
           cmp AUDIT.md "improve/versions/AUDIT-$V.md" \
             || { echo "::error::AUDIT.md ($V) differs from improve/versions/AUDIT-$V.md — every release must be snapshotted"; exit 1; }
+
+      - name: Docs sync — every version / fixture-count surface agrees (BS-11)
+        run: python3 evals/scripts/check-docs-sync.py

@@ -6,8 +6,5 @@
   "scripts": {
     "evals": "python3 evals/validate.py --all",
     "evals:record": "./evals/run-evals.sh --record"
-  },
-  "dependencies": {
-    "@vercel/analytics": "^2.0.1"
   }
 }

@@ -98,27 +98,88 @@ python3 evals/validate.py --run /path/to/target-repo   # checks its docs/ output
 
 ---
 
-## Quickstart for AI agents (automated mode)
+## Quickstart for automated mode (scripted / headless runs)
 
-If you are an agent reading this: your operating rules for **this repository**
-are in [`AGENTS.md`](./AGENTS.md). The two supported jobs:
+Automated mode means **you** launch the run from a script, a cron job, or CI —
+no chat session, no human in the loop until the handoff. The protocol is
+model-agnostic: the same two steps work with any coding agent that has a
+non-interactive (headless) mode and your API credentials in its environment.
 
-**Job A — audit a target repo.** Read `AUDIT.md`, fill CONFIG from the user's
-answers (or sensible defaults + `MODE: gated`), execute from PHASE 0. Your
-outputs are `docs/BACKLOG.md` and `docs/HANDOFF.md` in the target repo, and
-they will be validated against the closed sets and evidence gates described
-there — fabricated measurements are detectable.
+**1. Prepare the target repo once** — copy `AUDIT.md` in, fill CONFIG, and set
+`MODE: autonomous` (this is what removes the Phase 2 approval pause; everything
+else is identical to manual mode):
 
-**Job B — improve the protocol itself.** Follow `improve/CRITIC.md` exactly:
-one evidenced change per cycle, eval-gated, changelog-logged, immutably
-versioned. Trigger phrase a human might use:
+```bash
+cd /path/to/target-repo
+curl -O https://raw.githubusercontent.com/cyberskill-official/code-audit-framework/main/AUDIT.md
+$EDITOR AUDIT.md     # fill CONFIG; set MODE: autonomous
+```
 
-> "Run one improvement cycle per improve/CRITIC.md."
-> "Run improvement cycles until diminishing returns."
+Leave `MODE: gated` instead if you want scripted runs that still stop for a
+human `Approved:` line — the approval is a file artifact, so a teammate can
+grant it hours later and the next scheduled run picks it up (R4).
 
-Hard invariants for both jobs: never edit `improve/versions/*`; never weaken a
-fixture to make a change pass; `python3 evals/validate.py --all` must be green
-before you call any protocol change done.
+**2. Trigger the agent headlessly with one kickoff prompt.** The prompt is the
+same everywhere: `Read AUDIT.md and execute it. Begin at PHASE 0.`
+
+```bash
+# Claude Code (ANTHROPIC_API_KEY in env)
+claude -p "Read AUDIT.md and execute it. Begin at PHASE 0."
+
+# OpenAI Codex CLI (OPENAI_API_KEY in env)
+codex exec "Read AUDIT.md and execute it. Begin at PHASE 0."
+
+# Gemini CLI (GEMINI_API_KEY in env)
+gemini -p "Read AUDIT.md and execute it. Begin at PHASE 0."
+```
+
+(Headless flag names are current as of this writing — check your CLI's
+`--help`. Any agent that can read files and run shell commands qualifies.)
+
+**3. Gate the output mechanically.** The run's artifacts are designed to be
+machine-checked — fabricated measurements, uncited targets, gate-skips and
+leaked secrets are detectable from the files alone:
+
+```bash
+python3 evals/validate.py --run /path/to/target-repo              # exit 1 on violations
+python3 evals/validate.py --run /path/to/target-repo --report json  # findings for dashboards
+```
+
+In CI, run step 2 on a schedule and make step 3 the job's pass/fail — or use
+the GitHub Action below. Re-running the same kickoff prompt resumes idempotently
+(R4): state lives in `docs/BACKLOG.md`, not in the conversation.
+
+**No clone needed — two distribution channels for step 3:**
+
+```bash
+# One-off (uv) — or pipx install the same URL for a persistent command.
+# @v1 = floating major tag; pin an exact release tag (> v1.2.0) for immutability.
+uvx --from git+https://github.com/cyberskill-official/code-audit-framework@v1 \
+    code-audit-validate --run . --report json
+```
+
+```yaml
+# In the TARGET repo's workflow — gates the audit artifacts on every push
+- uses: cyberskill-official/code-audit-framework@v1
+  with:
+    path: .
+    report: json   # optional; also writes audit-report.json
+```
+
+(The packaged entry point covers `--run`/`--report`; the fixture suite
+`--all` stays repo-only, since fixtures ship with the repo, not the wheel.)
+
+**Improving the protocol itself, scripted the same way** (Job B in
+[`AGENTS.md`](./AGENTS.md) — the file agents are pointed at once they're
+running in *this* repo):
+
+```bash
+claude -p "Run one improvement cycle per improve/CRITIC.md."
+```
+
+Hard invariants either job is held to: never edit `improve/versions/*`; never
+weaken a fixture; `python3 evals/validate.py --all` green before any protocol
+change is done.
 
 ---
 

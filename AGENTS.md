@@ -38,16 +38,31 @@ Follow `improve/CRITIC.md` step by step. Summary of its non-negotiables:
 - Never commit secrets; this repo's outputs must satisfy R8 like any other.
 - `docs/` in THIS repo is gitignored scratch (self-run output) — do not fight
   the gitignore.
+- Docs follow changes, in the SAME commit. Anything a change makes stale —
+  versions, counts, flags, file lists, behavior described in README /
+  index.html / evals/README / improve/README / this file — gets corrected as
+  part of that change. The mechanical subset (version + fixture-count
+  surfaces) is enforced by `evals/scripts/check-docs-sync.py`, which CI runs;
+  the rest is on you.
+- Leave no leftovers. Before pushing: delete temp/scratch files you created,
+  remove dependencies and references your change orphaned, and update or
+  delete anything your change made outdated. `git status` and a read of your
+  own diff are the checklist.
 
 ## Verification commands
 ```bash
-python3 evals/validate.py --all     # full regression suite (must be ALL GREEN)
-./evals/run-evals.sh --record       # suite + pin baseline to AUDIT.md sha256
+python3 evals/validate.py --all          # full regression suite (must be ALL GREEN)
+./evals/run-evals.sh --record            # suite + pin baseline to AUDIT.md sha256
+python3 evals/scripts/check-docs-sync.py # version + fixture-count surfaces agree
 python3 -c "import json;b=json.load(open('evals/baseline.json'));print(b['audit_md_version'],b['all_ok'])"
 ```
 
 ## File map
-`AUDIT.md` protocol (current) · `CHANGELOG.md` history · `improve/` the loop
-(CRITIC, RETROSPECTIVE, FAILURE_LOG, versions/, retros/) · `evals/` regression
-gate (validate.py, fixtures/, rules.json, baseline.json) · `index.html` +
-`assets/` product page (CyberSkill design system; tokens documented inline).
+`AUDIT.md` protocol (current) · `CHANGELOG.md` history · `improve/` the loop —
+see `improve/README.md` for the one-screen map (CRITIC, RETROSPECTIVE,
+FAILURE_LOG, BLINDSPOTS, versions/, retros/) · `evals/` regression gate
+(validate.py, fixtures/, rules.json, baseline.json, scripts/) ·
+`.github/workflows/evals.yml` CI gate · `pyproject.toml` + `action.yml`
+distribution (pipx/uvx entry point; composite GitHub Action) · `index.html` +
+`assets/` product page (CyberSkill design system; tokens documented inline) ·
+`LICENSE`/`NOTICE`/`CONTRIBUTING.md`/`SECURITY.md` repo hygiene.
