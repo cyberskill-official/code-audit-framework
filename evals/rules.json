@@ -108,9 +108,10 @@
         "G04-redaction-prose-precision",
         "B07-secret-leak",
         "B16-compound-violations",
-        "B23-redaction-distance"
+        "B23-redaction-distance",
+        "B25-profile-secret-leak"
       ],
-      "coverage_note": "Pattern set is a finite denylist (BLINDSPOTS BS-07). A [REDACTED:kind] marker suppresses matches only within a 40-char context window; a raw value beyond it still trips even with a marker elsewhere in the file (B16, B23 — intended behavior pinned per structural review 4.2)."
+      "coverage_note": "Pattern set is a finite denylist (BLINDSPOTS BS-07). A [REDACTED:kind] marker suppresses matches only within a 40-char context window; a raw value beyond it still trips even with a marker elsewhere in the file (B16, B23 — intended behavior pinned per structural review 4.2). Targets extend the pattern set per stack via audit-profile.yaml (B25); an invalid profile regex yields MALFORMED-FILE."
     },
     {
       "rule_id": "P2-GATE",

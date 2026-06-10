@@ -76,16 +76,48 @@ def summarize(retros):
     }
 
 
+FB_VERSION_RE = re.compile(r"(?m)^protocol_version:\s*(v\d+\.\d+\.\d+)")
+FB_SCORE_RE = re.compile(r"(?m)^retro_score:\s*(\d+)")
+FB_ID_RE = re.compile(r"(?m)^run_id:\s*(\S+)")
+
+
+def parse_feedback(path: Path):
+    """feedback@1 field records (YAML or JSON) — only the trend fields are
+    read; full semantics live in schemas/feedback.v1.json."""
+    text = path.read_text(encoding="utf-8", errors="replace")
+    if path.suffix == ".json":
+        try:
+            d = json.loads(text)
+            return {"file": path.name, "protocol_version": d.get("protocol_version"),
+                    "score": d.get("retro_score"), "date": None,
+                    "project": d.get("run_id"), "mode": "field"}
+        except json.JSONDecodeError:
+            return {"file": path.name, "protocol_version": None, "score": None,
+                    "date": None, "project": None, "mode": "field"}
+    v, s, i = FB_VERSION_RE.search(text), FB_SCORE_RE.search(text), FB_ID_RE.search(text)
+    return {"file": path.name, "protocol_version": v.group(1) if v else None,
+            "score": int(s.group(1)) if s else None, "date": None,
+            "project": i.group(1) if i else None, "mode": "field"}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--retros-dir", default=str(RETROS))
+    ap.add_argument("--feedback-dir", default=None,
+                    help="also ingest feedback@1 records (the private field-data repo checkout) — per-version FIELD trend")
     args = ap.parse_args()
     rdir = Path(args.retros_dir)
     if not rdir.is_dir():
         print(f"retros directory not found: {rdir}", file=sys.stderr)
         sys.exit(2)
     retros = [parse_retro(p) for p in sorted(rdir.glob("*.md"))]
+    if args.feedback_dir:
+        fdir = Path(args.feedback_dir)
+        if not fdir.is_dir():
+            print(f"feedback directory not found: {fdir}", file=sys.stderr)
+            sys.exit(2)
+        retros += [parse_feedback(p) for p in sorted(list(fdir.glob("*.yaml")) + list(fdir.glob("*.yml")) + list(fdir.glob("*.json")))]
     summary = summarize(retros)
     if args.json:
         print(json.dumps(summary, indent=2))

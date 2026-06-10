@@ -8,7 +8,7 @@ versioned changelog, a retrospective rubric, a failure log, an LLM-as-critic
 cycle, and a deterministic regression harness that blocks any change that
 weakens a rule.
 
-> Visitor-friendly tour: open [`index.html`](./index.html) in a browser.
+> Visitor-friendly tour: **[cyberskill-official.github.io/code-audit-framework](https://cyberskill-official.github.io/code-audit-framework/)**
 > Built by [CyberSkill](https://cyberskill.world) — *Turn Your Will Into Real*.
 
 | | |
@@ -16,7 +16,7 @@ weakens a rule.
 | Protocol | [`AUDIT.md`](./AUDIT.md) — current release **v1.3.0** |
 | History | [`CHANGELOG.md`](./CHANGELOG.md) · immutable copies in [`improve/versions/`](./improve/versions/) |
 | Self-improvement | [`improve/CRITIC.md`](./improve/CRITIC.md) — one evidenced change per cycle |
-| Regression gate | [`evals/`](./evals/) — **34 fixtures, 34/34 green** at v1.3.0, stdlib-only Python; enforced in CI on every push |
+| Regression gate | [`evals/`](./evals/) — **35 fixtures, 35/35 green** at v1.3.0, stdlib-only Python; enforced in CI on every push |
 | For agents | [`AGENTS.md`](./AGENTS.md) — machine-facing operating rules for this repo |
 | License | [Apache-2.0](./LICENSE) · [`CONTRIBUTING.md`](./CONTRIBUTING.md) · [`SECURITY.md`](./SECURITY.md) |
 
@@ -172,13 +172,18 @@ uvx --from git+https://github.com/cyberskill-official/code-audit-framework@v1 \
 (The packaged entry point covers `--run`/`--report`/`--aggregate`; the fixture
 suite `--all` stays repo-only, since fixtures ship with the repo, not the wheel.)
 
-Two operational notes: accepted exceptions go in the target's
+Operational notes for fleets: accepted exceptions go in the target's
 `docs/AUDIT-WAIVERS.yaml` — audit-trailed suppressions with a reason, an
 approver, and a **mandatory expiry** (expired waivers re-raise the finding and
-flag the stale waiver). And the validator is **offline by design**: stdlib-only,
-no network calls, no telemetry — nothing about the audited codebase leaves the
-machine, which makes it safe for air-gapped and regulated environments
-(see [`COMPLIANCE.md`](./COMPLIANCE.md)).
+flag the stale waiver). Stack-specific tools and credential formats extend the
+denylists via an `audit-profile.yaml` at the target root. `--batch targets.yaml`
+validates a whole portfolio and writes per-run reports + `portfolio.json`;
+`--compare` diffs two runs; `--fail-on High` applies a severity policy to the
+exit code (every violation is still reported); `--emit-feedback` generates the
+per-run calibration record ([`evals/TESTING-PROTOCOL.md`](./evals/TESTING-PROTOCOL.md)).
+And the validator is **offline by design**: stdlib-only, no network calls, no
+telemetry — nothing about the audited codebase leaves the machine, which makes
+it safe for air-gapped and regulated environments (see [`COMPLIANCE.md`](./COMPLIANCE.md)).
 
 **Improving the protocol itself, scripted the same way** (Job B in
 [`AGENTS.md`](./AGENTS.md) — the file agents are pointed at once they're
@@ -226,7 +231,7 @@ regression-tested, and changed only with evidence.
    improve/CRITIC.md         ──  ONE minimal change; PATCH/MINOR/MAJOR
                   │
                   ▼
-   evals/validate.py --all   ──  34 fixtures must stay green
+   evals/validate.py --all   ──  35 fixtures must stay green
                   │
                   ▼
    CHANGELOG.md + improve/versions/AUDIT-vX.Y.Z.md  (immutable release)
@@ -273,7 +278,7 @@ Full evidence trail: [`CHANGELOG.md`](./CHANGELOG.md),
 ## The regression harness
 
 ```bash
-python3 evals/validate.py --all      # 34 fixtures: G* must pass, B* must trip
+python3 evals/validate.py --all      # 35 fixtures: G* must pass, B* must trip
 ./evals/run-evals.sh --record        # run + pin baseline.json to AUDIT.md's sha256
 python3 evals/validate.py --run DIR  # validate any real run's docs/ output
 python3 evals/validate.py --run DIR --report json   # structured findings export (or: sarif)

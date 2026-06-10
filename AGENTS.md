@@ -61,8 +61,10 @@ python3 -c "import json;b=json.load(open('evals/baseline.json'));print(b['audit_
 `AUDIT.md` protocol (current) · `CHANGELOG.md` history · `improve/` the loop —
 see `improve/README.md` for the one-screen map (CRITIC, RETROSPECTIVE,
 FAILURE_LOG, BLINDSPOTS, versions/, retros/) · `evals/` regression gate
-(validate.py, fixtures/, rules.json, baseline.json, scripts/) ·
-`.github/workflows/evals.yml` CI gate · `pyproject.toml` + `action.yml`
+(validate.py shim → code_audit_validator.py, fixtures/, rules.json,
+baseline.json, scripts/, TESTING-PROTOCOL.md field-accuracy procedure) ·
+`schemas/` published contracts (report.v1, feedback.v1) · `.github/workflows/`
+CI gate + release publishing (SHA-pinned) · `pyproject.toml` + `action.yml`
 distribution (pipx/uvx entry point; composite GitHub Action) · `index.html` +
 `assets/` product page (CyberSkill design system; tokens documented inline) ·
-`LICENSE`/`NOTICE`/`CONTRIBUTING.md`/`SECURITY.md` repo hygiene.
+`LICENSE`/`NOTICE`/`CONTRIBUTING.md`/`SECURITY.md`/`COMPLIANCE.md` repo hygiene.

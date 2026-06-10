@@ -38,8 +38,16 @@ python3 evals/validate.py --run <dir>            # validate a real run's docs/ o
 python3 evals/validate.py --run <dir> --report json   # structured findings export (schemas/report.v1.json)
 python3 evals/validate.py --run <dir> --report sarif  # GitHub code-scanning format
 python3 evals/validate.py --aggregate r1.json r2.json # portfolio roll-up over report JSONs
+python3 evals/validate.py --batch targets.yaml        # fleet runner: per-target reports + portfolio.json
+python3 evals/validate.py --compare prev.json curr.json  # run-over-run regressions (reopened tasks, new codes)
+python3 evals/validate.py --run <dir> --emit-feedback # feedback@1 calibration record (schemas/feedback.v1.json)
+python3 evals/validate.py --run <dir> --fail-on High  # severity exit-code policy (all violations still printed)
 python3 evals/scripts/retro-summary.py           # retro scores per protocol version (did each release help?)
+python3 evals/scripts/retro-summary.py --feedback-dir <field-data>  # + per-version FIELD trend
 ```
+
+Field-run accuracy evaluation (tiers, metrics, calibration pipeline):
+[`TESTING-PROTOCOL.md`](./TESTING-PROTOCOL.md).
 
 Point `--run` at the target repo root (or its `docs/`): if the target's
 `AUDIT.md` is found, its CONFIG is preflighted and `PROTECTED_AREAS` is loaded

@@ -45,12 +45,20 @@ PROTECTED_AREAS is loaded from it automatically — `--protected` then extends
 rather than replaces it (closes the double-entry gap, review item G-F).
 
 Usage:
-  python3 evals/validate.py --run <dir-containing-docs>  [--protected p1,p2]
+  python3 evals/validate.py --run <dir-containing-docs>  [--protected p1,p2] [--fail-on High]
   python3 evals/validate.py --run <dir> --report json    # structured findings export
   python3 evals/validate.py --run <dir> --report sarif   # GitHub code-scanning format
+  python3 evals/validate.py --run <dir> --emit-feedback  # feedback@1 record skeleton
+  python3 evals/validate.py --batch targets.yaml         # fleet runner -> reports + portfolio.json
   python3 evals/validate.py --aggregate r1.json r2.json  # portfolio roll-up of report JSONs
+  python3 evals/validate.py --compare prev.json curr.json  # run-over-run regressions
   python3 evals/validate.py --all          # run every fixture, compare to expectations
   python3 evals/validate.py --all --json   # machine-readable results
+
+A target may ship `audit-profile.yaml` at its root to EXTEND the GUI-tool and
+secret-pattern denylists per stack (gui_tools list; secret_patterns name+regex
+entries). `--fail-on` applies a severity policy to the exit code only — every
+violation is always reported.
 
 Exit codes: 0 = all good; 1 = violations / fixture mismatch; 2 = usage error.
 """
@@ -179,7 +187,59 @@ def col(header, *names):
     return None
 
 
-def check_benchmark_like_table(header, rows, end_idx, text, violations, src, is_handoff):
+def load_profile(target_root: Path, violations):
+    """M-1 — stack profile packs. An optional `audit-profile.yaml` at the
+    target root EXTENDS (never replaces) the built-in denylists, so
+    stack-specific gaps become data calibrated per engagement, not validator
+    code edits:
+
+        gui_tools:
+          - android studio profiler
+        secret_patterns:
+          - name: acme-internal-token
+            regex: "\\\\bacme_[A-Za-z0-9]{20}\\\\b"
+
+    Returns (gui_tools, secret_patterns). A bad regex is an artifact problem
+    and yields MALFORMED-FILE (verdict, not traceback) for that entry."""
+    gui = list(GUI_TOOLS)
+    secrets = list(SECRET_PATTERNS)
+    f = target_root / "audit-profile.yaml"
+    if not f.exists():
+        return gui, secrets
+    section, cur = None, None
+    for raw in f.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = raw.rstrip()
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        if s == "gui_tools:":
+            section, cur = "gui", None
+            continue
+        if s == "secret_patterns:":
+            section, cur = "secrets", None
+            continue
+        if section == "gui" and s.startswith("- "):
+            gui.append(s[2:].strip().strip("\"'").lower())
+        elif section == "secrets":
+            if s.startswith("- "):
+                cur = {}
+                s = s[2:].strip()
+            if cur is None or ":" not in s:
+                continue
+            k, _, v = s.partition(":")
+            cur[k.strip()] = v.strip().strip("\"'")
+            if "name" in cur and "regex" in cur and "_done" not in cur:
+                try:
+                    secrets.append((f"profile:{cur['name']}", re.compile(cur["regex"])))
+                except re.error as e:
+                    violations.append(("MALFORMED-FILE", "audit-profile.yaml",
+                                       f"secret pattern '{cur['name']}' has an invalid regex: {e}"))
+                cur["_done"] = True
+    return gui, secrets
+
+
+def check_benchmark_like_table(header, rows, end_idx, text, violations, src, is_handoff, gui_tools=None):
+    gui_tools = gui_tools if gui_tools is not None else GUI_TOOLS
     mi = col(header, "metric")
     bi = col(header, "baseline")
     ti = col(header, "target")
@@ -228,7 +288,7 @@ def check_benchmark_like_table(header, rows, end_idx, text, violations, src, is_
         # R1 — GUI tools are not verification
         if verify:
             v_low = verify.lower()
-            for tool in GUI_TOOLS:
+            for tool in gui_tools:
                 if tool in v_low:
                     violations.append(("R1-GUI-TOOL", src, f"'{verify}' is a GUI tool, not a shell command"))
                     break
@@ -311,8 +371,8 @@ def check_approvals(text, violations, src):
                                        f"task '{tid}' is {status} but {why}"))
 
 
-def check_secrets(text, violations, src):
-    for kind, pat in SECRET_PATTERNS:
+def check_secrets(text, violations, src, secret_patterns=None):
+    for kind, pat in (secret_patterns if secret_patterns is not None else SECRET_PATTERNS):
         for m in pat.finditer(text):
             ctx = text[max(0, m.start() - 40):m.start()]
             if "[REDACTED:" in ctx + m.group(0):
@@ -543,8 +603,10 @@ def validate_run(run_dir: Path, protected=None, waived_out=None):
     violations = []
     docs = run_dir / "docs" if (run_dir / "docs").is_dir() else run_dir
     # The target repo's root is docs/'s parent — whether --run was pointed at
-    # the repo root or at docs/ itself. CONFIG preflight may extend `protected`.
+    # the repo root or at docs/ itself. CONFIG preflight may extend `protected`;
+    # an optional audit-profile.yaml extends the denylists (M-1).
     check_config_preflight(docs.parent, violations, protected)
+    gui_tools, secret_patterns = load_profile(docs.parent, violations)
     backlog = docs / "BACKLOG.md"
     handoff = docs / "HANDOFF.md"
     if not backlog.exists():
@@ -553,7 +615,7 @@ def validate_run(run_dir: Path, protected=None, waived_out=None):
         text = read_artifact(backlog, violations, "BACKLOG.md")
         if text is not None:
             check_template_conformance(text, violations, "BACKLOG.md")
-            check_secrets(text, violations, "BACKLOG.md")
+            check_secrets(text, violations, "BACKLOG.md", secret_patterns)
             check_approvals(text, violations, "BACKLOG.md")
             for header, rows, end in parse_tables(text):
                 # Architect review F-2: a metric table in the BACKLOG is ALWAYS
@@ -561,18 +623,18 @@ def validate_run(run_dir: Path, protected=None, waived_out=None):
                 # the check (the `Final`-column escape hatch is closed).
                 if col(header, "metric") is not None:
                     handoff_shaped = col(header, "final") is not None and col(header, "status") is not None
-                    check_benchmark_like_table(header, rows, end, text, violations, "BACKLOG.md", is_handoff=handoff_shaped)
+                    check_benchmark_like_table(header, rows, end, text, violations, "BACKLOG.md", is_handoff=handoff_shaped, gui_tools=gui_tools)
                 elif col(header, "status") is not None and col(header, "id") is not None:
                     check_task_table(header, rows, violations, "BACKLOG.md", protected)
     if handoff.exists():
         text = read_artifact(handoff, violations, "HANDOFF.md")
         if text is not None:
-            check_secrets(text, violations, "HANDOFF.md")
+            check_secrets(text, violations, "HANDOFF.md", secret_patterns)
             if not STOP_RE.search(text):
                 violations.append(("P5-NO-STOP-REASON", "HANDOFF.md", "no 'Stop condition: (a|b|c)' line"))
             for header, rows, end in parse_tables(text):
                 if col(header, "metric") is not None:
-                    check_benchmark_like_table(header, rows, end, text, violations, "HANDOFF.md", is_handoff=(col(header, "final") is not None))
+                    check_benchmark_like_table(header, rows, end, text, violations, "HANDOFF.md", is_handoff=(col(header, "final") is not None), gui_tools=gui_tools)
                 elif col(header, "status") is not None and col(header, "id") is not None:
                     check_task_table(header, rows, violations, "HANDOFF.md", protected)
     return apply_waivers(docs, violations, waived_out)
@@ -791,6 +853,143 @@ def run_all(as_json=False):
     return 0 if ok else 1
 
 
+# M-2 — severity-policy gate. Violation codes carry fixed severities so client
+# CI can ratchet strictness (--fail-on) instead of facing a binary red wall.
+# The DEFAULT remains "any violation fails": the policy gate is opt-in.
+VIOLATION_SEVERITY = {
+    "R8-SECRET": "Critical", "R3-PROTECTED": "Critical", "GATED-UNAPPROVED-EXEC": "Critical",
+    "R1-NO-OUTPUT": "High", "R1-UNLINKED-OUTPUT": "High", "R1-NO-REASON": "High",
+    "R1-GUI-TOOL": "High", "R2-UNCITED": "High", "R2-NONNUMERIC": "High",
+    "TEMPLATE-NONCONFORMANT": "High", "CONFIG-PLACEHOLDER": "High", "CONFIG-BAD-ENUM": "High",
+    "MALFORMED-FILE": "High", "WAIVER-EXPIRED": "High", "MISSING-FILE": "High",
+    "R5-BAD-STATUS": "Medium", "R5-BAD-SEV": "Medium", "R5-BAD-ID": "Medium",
+    "R6-NO-ROOTCAUSE": "Medium", "P5-NO-STOP-REASON": "Medium", "HANDOFF-BAD-MSTATUS": "Medium",
+}
+SEVERITY_RANK = {"Critical": 3, "High": 2, "Medium": 1, "any": 0}
+
+
+def gate_violations(violations, fail_on):
+    """Return the subset of violations at or above the fail threshold.
+    Unknown codes (e.g. future additions) conservatively count as High."""
+    if fail_on == "any":
+        return violations
+    floor = SEVERITY_RANK[fail_on]
+    return [v for v in violations
+            if SEVERITY_RANK.get(VIOLATION_SEVERITY.get(v[0], "High"), 2) >= floor]
+
+
+def compare_reports(prev_path, curr_path):
+    """M-5 — run-over-run comparison: regressions between two report@1 files.
+    Informational (continuity for multi-loop engagements); the exit gate stays
+    --run's job."""
+    prev = json.loads(Path(prev_path).read_text(encoding="utf-8"))
+    curr = json.loads(Path(curr_path).read_text(encoding="utf-8"))
+    p_tasks = {t["id"]: t for l in prev.get("loops", []) for t in l.get("tasks", [])}
+    c_tasks = {t["id"]: t for l in curr.get("loops", []) for t in l.get("tasks", [])}
+    reopened = [tid for tid, t in c_tasks.items()
+                if p_tasks.get(tid, {}).get("status") == "DONE" and t.get("status") != "DONE"]
+    pv = prev.get("summary", {}).get("violations_by_code", {})
+    cv = curr.get("summary", {}).get("violations_by_code", {})
+    new_codes = {c: n for c, n in cv.items() if n > pv.get(c, 0)}
+    cleared = {c: n for c, n in pv.items() if cv.get(c, 0) < n}
+    p_metrics = {m["metric"]: m for m in prev.get("metrics", [])}
+    metric_changes = []
+    for m in curr.get("metrics", []):
+        pm = p_metrics.get(m["metric"])
+        if pm and "delta_computed" in m and "delta_computed" in pm and m["delta_computed"] != pm["delta_computed"]:
+            metric_changes.append({"metric": m["metric"],
+                                   "prev_delta": pm["delta_computed"], "curr_delta": m["delta_computed"]})
+    return {
+        "schema": "code-audit-framework/comparison@1",
+        "prev": prev.get("run_dir"), "curr": curr.get("run_dir"),
+        "clean_transition": f"{prev.get('summary', {}).get('clean')} -> {curr.get('summary', {}).get('clean')}",
+        "reopened_tasks": reopened,
+        "violations_increased": new_codes,
+        "violations_cleared": cleared,
+        "metric_delta_changes": metric_changes,
+    }
+
+
+def emit_feedback(run_dir: Path, report, waived, run_id=None):
+    """M-7 — feedback-record skeleton (schemas/feedback.v1.json): the machine
+    half filled from the run, the human adjudication half left empty. One run
+    -> one record; records are the calibration substrate (TESTING-PROTOCOL)."""
+    import datetime
+    rid = run_id or f"{datetime.date.today().isoformat()}-{run_dir.resolve().name}"
+    s = report.get("summary", {})
+    lines = [
+        "# feedback@1 — fill the adjudication fields, then file in the field-data repo",
+        "# (sanitize: client -> code name, no code excerpts, R8 applies here too)",
+        f"run_id: {rid}",
+        f"protocol_version: {report.get('protocol_version') or 'null  # no AUDIT.md found at target root'}",
+        f"validator_version: {'.'.join(str(x) for x in CURRENT_PROTOCOL)}",
+        "agent: { cli: FILLME, model: FILLME }",
+        "config: { mode: FILLME, depth: FILLME, loop_budget: FILLME, stack: [FILLME] }",
+        f"report_ref: reports/{rid}.json",
+        "retro_score: FILLME            # RETROSPECTIVE.md total /20",
+        "retro_items: {}                # only items scored < 2, with a one-line note",
+        "validator_false_positives: []  # each is a G-fixture candidate: {code, detail_excerpt, why_wrong}",
+        "validator_misses: []           # each is a B-fixture + FAILURE_LOG candidate: {description, candidate_code}",
+        "denylist_gaps: []              # {list: GUI_TOOLS|SECRET_PATTERNS, value: ...} -> audit-profile/pattern-pack",
+        "fabrication_check: { sampled: 0, mismatched: 0 }   # TESTING-PROTOCOL tier 3",
+        "cross_model: null              # tier 4 runs only",
+        f"waivers: {{ active: {len(waived)}, expired_flagged: {s.get('violations_by_code', {}).get('WAIVER-EXPIRED', 0)} }}",
+        f"violations_total: {s.get('violations', 0)}",
+        "narrative: >",
+        "  FILLME — one paragraph: what surprised, what the client said, what the numbers miss.",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def run_batch(targets_file, out_dir, fail_on):
+    """M-3 — fleet runner: validate every target listed in a YAML-lite file
+    (`- path: ...` with optional `name:`/`protected:`), write one report@1
+    each into out_dir, then aggregate. Exit 1 if any run fails the policy."""
+    entries, cur = [], None
+    for raw in Path(targets_file).read_text(encoding="utf-8").splitlines():
+        s = raw.strip()
+        if not s or s.startswith("#"):
+            continue
+        if s.startswith("- "):
+            cur = {}
+            entries.append(cur)
+            s = s[2:].strip()
+        if cur is None or ":" not in s:
+            continue
+        k, _, v = s.partition(":")
+        cur[k.strip()] = v.strip().strip("\"'")
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    paths, any_fail = [], False
+    for e in entries:
+        target = Path(e.get("path", ""))
+        name = e.get("name") or target.resolve().name
+        protected = [p for p in e.get("protected", "").split(",") if p]
+        if not target.exists():
+            print(f"[FAIL] {name}: path does not exist: {target}")
+            any_fail = True
+            continue
+        waived = []
+        v = validate_run(target, protected=protected, waived_out=waived)
+        gated = gate_violations(v, fail_on)
+        report = build_report(target, protected, v)
+        report["waived"] = waived
+        report["summary"]["waived"] = len(waived)
+        rp = out / f"{name}.json"
+        rp.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        paths.append(str(rp))
+        status = "PASS" if not gated else "FAIL"
+        any_fail |= bool(gated)
+        print(f"[{status}] {name}: {len(v)} violation(s), {len(waived)} waived → {rp}")
+    if paths:
+        agg = aggregate_reports(paths)
+        (out / "portfolio.json").write_text(json.dumps(agg, indent=2) + "\n", encoding="utf-8")
+        t = agg["totals"]
+        print(f"\nportfolio: {t['clean_runs']}/{t['runs']} clean, {t['violations']} active, "
+              f"{t['waived']} waived → {out / 'portfolio.json'}")
+    return 1 if any_fail else 0
+
+
 def aggregate_reports(paths):
     """Portfolio roll-up over per-run report JSONs (architect review §3.2)."""
     import datetime
@@ -832,10 +1031,32 @@ def main():
                     help="with --run: emit a structured findings report instead of plain violations")
     ap.add_argument("--aggregate", nargs="+", metavar="REPORT_JSON",
                     help="portfolio roll-up over per-run --report json files")
+    ap.add_argument("--batch", metavar="TARGETS_YAML",
+                    help="fleet runner: validate every listed target, write reports + portfolio.json")
+    ap.add_argument("--batch-out", default="audit-reports", help="output directory for --batch (default: audit-reports)")
+    ap.add_argument("--compare", nargs=2, metavar=("PREV_JSON", "CURR_JSON"),
+                    help="run-over-run comparison of two report files (informational)")
+    ap.add_argument("--emit-feedback", action="store_true",
+                    help="with --run: print a feedback@1 record skeleton for this run")
+    ap.add_argument("--run-id", default=None, help="with --emit-feedback: override the generated run id")
+    ap.add_argument("--fail-on", choices=["any", "Critical", "High", "Medium"], default="any",
+                    help="exit-code policy: fail only on violations at/above this severity (default: any)")
     ap.add_argument("--protected", default="", help="comma-separated protected paths (extends the target AUDIT.md's PROTECTED_AREAS)")
     args = ap.parse_args()
     if args.all:
         sys.exit(run_all(as_json=args.json))
+    if args.batch:
+        if not Path(args.batch).is_file():
+            print(f"usage error: targets file not found: {args.batch}", file=sys.stderr)
+            sys.exit(2)
+        sys.exit(run_batch(args.batch, args.batch_out, args.fail_on))
+    if args.compare:
+        missing = [p for p in args.compare if not Path(p).is_file()]
+        if missing:
+            print(f"usage error: report file(s) not found: {', '.join(missing)}", file=sys.stderr)
+            sys.exit(2)
+        print(json.dumps(compare_reports(*args.compare), indent=2))
+        sys.exit(0)
     if args.aggregate:
         missing = [p for p in args.aggregate if not Path(p).is_file()]
         if missing:
@@ -861,7 +1082,12 @@ def main():
         protected = [p for p in args.protected.split(",") if p]
         waived = []
         v = validate_run(run_path, protected=protected, waived_out=waived)
-        if args.report:
+        gated = gate_violations(v, args.fail_on)
+        if args.emit_feedback:
+            report = build_report(run_path, protected, v)
+            report["waived"] = waived
+            print(emit_feedback(run_path, report, waived, run_id=args.run_id))
+        elif args.report:
             report = build_report(run_path, protected, v)
             report["waived"] = waived
             report["summary"]["waived"] = len(waived)
@@ -870,12 +1096,15 @@ def main():
             print(json.dumps([{"code": c, "file": s, "detail": d} for c, s, d in v], indent=2))
         else:
             for c, s, d in v:
-                print(f"VIOLATION {c} [{s}] {d}")
+                sev = VIOLATION_SEVERITY.get(c, "High")
+                print(f"VIOLATION {c} [{s}] ({sev}) {d}")
             for w in waived:
                 print(f"WAIVED    {w['code']} [{w['file']}] until {w['expires']} — {w['reason']} (approved by {w['approved_by']})")
             tail = "CLEAN — no violations" if not v else f"{len(v)} violation(s)"
+            if v and not gated:
+                tail += f" — all below --fail-on {args.fail_on}, exit 0"
             print(tail + (f" ({len(waived)} waived)" if waived else ""))
-        sys.exit(0 if not v else 1)
+        sys.exit(0 if not gated else 1)
     ap.print_help()
     sys.exit(2)
 
