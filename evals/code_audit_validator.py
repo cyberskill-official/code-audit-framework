@@ -29,8 +29,15 @@ machine-checkable subset of AUDIT.md's core rules:
                      unedited <placeholder> text (Phase 0 preflight)
   CONFIG-BAD-ENUM    MODE / DEPTH / BENCHMARK_MODE / SEVERITY_FLOOR outside its
                      allowed set (Phase 0 preflight)
+  MALFORMED-FILE     artifact is not valid UTF-8 text or exceeds the size
+                     ceiling — a verdict, never a traceback
+  WAIVER-EXPIRED     a docs/AUDIT-WAIVERS.yaml entry matched a violation but is
+                     expired/undated; the original violation stays active
 
 A loop with zero findings is VALID (R7): absence of tasks is never a violation.
+Waivers (docs/AUDIT-WAIVERS.yaml in the target repo) suppress matched
+violations with an audit trail: code + reason + approved_by + expires (ISO
+date, mandatory). Expired waivers un-suppress and are themselves flagged.
 
 When the run directory (or its parent, if you point --run at docs/ itself)
 contains the target's AUDIT.md, the CONFIG block is preflighted and
@@ -41,6 +48,7 @@ Usage:
   python3 evals/validate.py --run <dir-containing-docs>  [--protected p1,p2]
   python3 evals/validate.py --run <dir> --report json    # structured findings export
   python3 evals/validate.py --run <dir> --report sarif   # GitHub code-scanning format
+  python3 evals/validate.py --aggregate r1.json r2.json  # portfolio roll-up of report JSONs
   python3 evals/validate.py --all          # run every fixture, compare to expectations
   python3 evals/validate.py --all --json   # machine-readable results
 
@@ -110,11 +118,25 @@ def split_cells(line: str):
 
 
 def parse_tables(text: str):
-    """Yield (header_cells, rows, end_line_idx) for every markdown table."""
+    """Yield (header_cells, rows, end_line_idx) for every markdown table.
+
+    Fence-aware (architect review F-1): R1 *requires* pasting raw tool output
+    into ``` fences, and that output may itself contain GFM-table-shaped lines
+    (markdown-emitting coverage/lint tools, `gh` CLI). Quoted lines inside a
+    fence are raw evidence, not run artifacts — they must neither trip
+    task/benchmark checks nor count toward template conformance.
+    `section_fences` keeps its own independent fence walk."""
     lines = text.splitlines()
-    i = 0
+    i, in_fence = 0, False
     while i < len(lines):
         line = lines[i].strip()
+        if line.startswith("```"):
+            in_fence = not in_fence
+            i += 1
+            continue
+        if in_fence:
+            i += 1
+            continue
         if line.startswith("|") and i + 1 < len(lines) and re.match(r"^\|[\s:|-]+\|?$", lines[i + 1].strip()):
             header = split_cells(line)
             rows, j = [], i + 2
@@ -214,11 +236,13 @@ def check_benchmark_like_table(header, rows, end_idx, text, violations, src, is_
     fences = section_fences(text, end_idx)
     if has_measured_row and not fences:
         violations.append(("R1-NO-OUTPUT", src, "table has MEASURED/measured rows but no fenced raw-output block before next heading"))
-    # …and each measured row must be traceable to ITS verify command
+    # …and each measured row must be traceable to ITS verify command.
+    # Whitespace-normalized containment (architect review F-6): a long command
+    # re-wrapped across lines inside the fence is still the same command.
     elif fences:
-        joined = "\n".join(fences)
+        joined_ws = " ".join("\n".join(fences).split())
         for metric, verify in measured_rows:
-            if verify and verify not in {"—", "-", ""} and verify not in joined:
+            if verify and verify not in {"—", "-", ""} and " ".join(verify.split()) not in joined_ws:
                 violations.append(("R1-UNLINKED-OUTPUT", src, f"measured metric '{metric}': verify command '{verify}' appears in no fenced output block"))
 
 
@@ -242,9 +266,9 @@ def check_task_table(header, rows, violations, src, protected):
         if status == "BLOCKED" and "root cause" not in " ".join(r).lower():
             violations.append(("R6-NO-ROOTCAUSE", src, f"BLOCKED task '{tid}' has no 'Root cause:' note"))
         if status == "DONE" and protected:
-            joined = " ".join(r)
+            joined = " ".join(r).casefold()  # case-insensitive: src/Billing == src/billing (F-6)
             for p in protected:
-                if p and p in joined:
+                if p and p.casefold() in joined:
                     violations.append(("R3-PROTECTED", src, f"DONE task '{tid}' touches protected path '{p}'"))
 
 
@@ -332,15 +356,28 @@ CONFIG_ENUMS = {
     "BENCHMARK_MODE": {"auto", "provided", "none"},
     "SEVERITY_FLOOR": {"Critical", "High", "Medium", "Low"},
 }
-PLACEHOLDER_RE = re.compile(r"<[^<>\n]*>")
+# Architect review F-4: `<...>` alone misreads Java/TS generics (List<OrderDTO>)
+# and shell redirection (< seed.txt > out.log) as placeholders. A placeholder is
+# either the WHOLE value wrapped in <...>, or text carrying one of the canonical
+# template stems below (the literal phrasings shipped in AUDIT.md's CONFIG).
+TEMPLATE_STEMS = ("<e.g.", "<one line", "<paths/", "<how to", "<constraints", "<optional:")
 CONFIG_KEY_RE = re.compile(r"^([A-Z][A-Z_]+):\s*(.*)$")
+
+
+def is_placeholder(value: str) -> bool:
+    v = value.strip()
+    if len(v) > 2 and v.startswith("<") and v.endswith(">"):
+        return True
+    low = v.lower()
+    return any(stem in low for stem in TEMPLATE_STEMS)
 
 
 def parse_audit_config(audit_md: Path):
     """Flat KEY: value parse of the CONFIG block in a target repo's AUDIT.md.
-    Trailing `# comment` text is stripped; placeholder text is preserved."""
+    Comments are stripped only at >=2 spaces before '#' (the template's own
+    column style) so values like 'ticket #4211' survive intact (F-4)."""
     cfg, in_config = {}, False
-    for line in audit_md.read_text(encoding="utf-8").splitlines():
+    for line in audit_md.read_text(encoding="utf-8", errors="replace").splitlines():
         if re.match(r"^##\s*CONFIG\b", line):
             in_config = True
             continue
@@ -352,34 +389,136 @@ def parse_audit_config(audit_md: Path):
         if not m:
             continue
         key, raw = m.groups()
-        cfg[key] = re.split(r"\s+#", raw, 1)[0].strip()
+        cfg[key] = re.split(r"\s{2,}#", raw, 1)[0].strip()
     return cfg
 
 
 def check_config_preflight(target_root: Path, violations, protected):
     """Phase 0 CONFIG preflight (review gap G-D) + PROTECTED_AREAS auto-load
     (gap G-F). Runs only when the target's AUDIT.md is present; placeholder
-    values never silently configure anything."""
+    values never silently configure anything. Enum values are compared on the
+    first whitespace token, so an inline trailing comment can't fail the enum."""
     audit = target_root / "AUDIT.md"
     if not audit.exists():
         return
     cfg = parse_audit_config(audit)
     for key, val in cfg.items():
-        if PLACEHOLDER_RE.search(val):
+        if is_placeholder(val):
             violations.append(("CONFIG-PLACEHOLDER", "AUDIT.md",
                                f"{key} still contains unedited template text: '{val[:60]}'"))
-        elif key in CONFIG_ENUMS and val and val not in CONFIG_ENUMS[key]:
-            violations.append(("CONFIG-BAD-ENUM", "AUDIT.md",
-                               f"{key} '{val}' not in {sorted(CONFIG_ENUMS[key])}"))
+        elif key in CONFIG_ENUMS and val:
+            token = val.split()[0]
+            if token not in CONFIG_ENUMS[key]:
+                violations.append(("CONFIG-BAD-ENUM", "AUDIT.md",
+                                   f"{key} '{token}' not in {sorted(CONFIG_ENUMS[key])}"))
     areas = cfg.get("PROTECTED_AREAS", "")
-    if areas and not PLACEHOLDER_RE.search(areas):
+    if areas and not is_placeholder(areas):
         for p in areas.split(","):
             p = p.strip()
             if p and p not in protected:
                 protected.append(p)
 
 
-def validate_run(run_dir: Path, protected=None):
+MAX_ARTIFACT_BYTES = 10 * 1024 * 1024  # 10 MB ceiling — a "report" beyond this is not a report
+
+
+def read_artifact(path: Path, violations, src):
+    """Guarded reader (architect review F-3): artifact problems must become
+    VERDICTS, never tracebacks — a gate that crashes is neither pass nor fail
+    and invites `|| true` workarounds. Returns text, or None after recording
+    a MALFORMED-FILE violation."""
+    try:
+        if path.stat().st_size > MAX_ARTIFACT_BYTES:
+            violations.append(("MALFORMED-FILE", src,
+                               f"file is {path.stat().st_size} bytes — exceeds the {MAX_ARTIFACT_BYTES // (1024*1024)} MB artifact ceiling"))
+            return None
+        return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as e:
+        violations.append(("MALFORMED-FILE", src,
+                           f"not valid UTF-8 (decode error at byte {e.start}) — artifacts must be UTF-8 text"))
+        return None
+    except OSError as e:
+        violations.append(("MALFORMED-FILE", src, f"unreadable: {e.__class__.__name__}"))
+        return None
+
+
+def load_waivers(docs: Path):
+    """docs/AUDIT-WAIVERS.yaml in the TARGET repo — audit-trailed, expiring
+    suppressions (architect review §3.1). Deliberately different from eval
+    fixtures (which may never be weakened): waivers live in the audited repo,
+    name an approver, and MUST expire. Minimal YAML subset, stdlib-only:
+
+        - code: R2-UNCITED            # required: violation code to waive
+          file: BACKLOG.md            # optional: artifact filename
+          match: "Palantir"           # optional: substring of the detail
+          reason: "approved comparison for marketing deck"
+          approved_by: "name@company"
+          expires: 2026-09-01         # required: ISO date
+    """
+    f = docs / "AUDIT-WAIVERS.yaml"
+    entries, cur = [], None
+    if not f.exists():
+        return entries
+    for raw in f.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("- "):
+            cur = {}
+            entries.append(cur)
+            line = line[2:].strip()
+        if cur is None or ":" not in line:
+            continue
+        k, _, v = line.partition(":")
+        cur[k.strip()] = v.split(" #")[0].strip().strip("\"'")
+    return entries
+
+
+def apply_waivers(docs: Path, violations, waived_out=None):
+    """Partition violations into active vs waived. An expired (or undated)
+    waiver does NOT suppress — the original violation stays active and the
+    waiver itself becomes a WAIVER-EXPIRED violation. WAIVER-EXPIRED is not
+    itself waivable."""
+    import datetime
+    waivers = load_waivers(docs)
+    if not waivers:
+        return violations
+    today = datetime.date.today()
+    active, flagged = [], set()
+    for code, src, detail in violations:
+        match = None
+        for i, w in enumerate(waivers):
+            if w.get("code") != code:
+                continue
+            if w.get("file") and w["file"] != src:
+                continue
+            if w.get("match") and w["match"] not in detail:
+                continue
+            match = (i, w)
+            break
+        if match is None:
+            active.append((code, src, detail))
+            continue
+        i, w = match
+        try:
+            valid = datetime.date.fromisoformat(w.get("expires", "")) >= today
+        except ValueError:
+            valid = False
+        if valid:
+            if waived_out is not None:
+                waived_out.append({"code": code, "file": src, "detail": detail,
+                                   "reason": w.get("reason", ""), "approved_by": w.get("approved_by", ""),
+                                   "expires": w.get("expires", "")})
+        else:
+            active.append((code, src, detail))
+            if i not in flagged:
+                flagged.add(i)
+                active.append(("WAIVER-EXPIRED", "AUDIT-WAIVERS.yaml",
+                               f"waiver for {code} ('{w.get('reason', 'no reason')}') expired or has no valid 'expires:' date — renew it or fix the violation"))
+    return active
+
+
+def validate_run(run_dir: Path, protected=None, waived_out=None):
     """Validate one run directory (containing docs/BACKLOG.md, docs/HANDOFF.md)."""
     protected = list(protected or [])
     violations = []
@@ -392,26 +531,32 @@ def validate_run(run_dir: Path, protected=None):
     if not backlog.exists():
         violations.append(("MISSING-FILE", "docs/BACKLOG.md", "file not found"))
     if backlog.exists():
-        text = backlog.read_text(encoding="utf-8")
-        check_template_conformance(text, violations, "BACKLOG.md")
-        check_secrets(text, violations, "BACKLOG.md")
-        check_approvals(text, violations, "BACKLOG.md")
-        for header, rows, end in parse_tables(text):
-            if col(header, "metric") is not None and col(header, "final") is None:
-                check_benchmark_like_table(header, rows, end, text, violations, "BACKLOG.md", is_handoff=False)
-            elif col(header, "status") is not None and col(header, "id") is not None:
-                check_task_table(header, rows, violations, "BACKLOG.md", protected)
+        text = read_artifact(backlog, violations, "BACKLOG.md")
+        if text is not None:
+            check_template_conformance(text, violations, "BACKLOG.md")
+            check_secrets(text, violations, "BACKLOG.md")
+            check_approvals(text, violations, "BACKLOG.md")
+            for header, rows, end in parse_tables(text):
+                # Architect review F-2: a metric table in the BACKLOG is ALWAYS
+                # checked — column shape selects semantics, it never disables
+                # the check (the `Final`-column escape hatch is closed).
+                if col(header, "metric") is not None:
+                    handoff_shaped = col(header, "final") is not None and col(header, "status") is not None
+                    check_benchmark_like_table(header, rows, end, text, violations, "BACKLOG.md", is_handoff=handoff_shaped)
+                elif col(header, "status") is not None and col(header, "id") is not None:
+                    check_task_table(header, rows, violations, "BACKLOG.md", protected)
     if handoff.exists():
-        text = handoff.read_text(encoding="utf-8")
-        check_secrets(text, violations, "HANDOFF.md")
-        if not STOP_RE.search(text):
-            violations.append(("P5-NO-STOP-REASON", "HANDOFF.md", "no 'Stop condition: (a|b|c)' line"))
-        for header, rows, end in parse_tables(text):
-            if col(header, "metric") is not None:
-                check_benchmark_like_table(header, rows, end, text, violations, "HANDOFF.md", is_handoff=(col(header, "final") is not None))
-            elif col(header, "status") is not None and col(header, "id") is not None:
-                check_task_table(header, rows, violations, "HANDOFF.md", protected)
-    return violations
+        text = read_artifact(handoff, violations, "HANDOFF.md")
+        if text is not None:
+            check_secrets(text, violations, "HANDOFF.md")
+            if not STOP_RE.search(text):
+                violations.append(("P5-NO-STOP-REASON", "HANDOFF.md", "no 'Stop condition: (a|b|c)' line"))
+            for header, rows, end in parse_tables(text):
+                if col(header, "metric") is not None:
+                    check_benchmark_like_table(header, rows, end, text, violations, "HANDOFF.md", is_handoff=(col(header, "final") is not None))
+                elif col(header, "status") is not None and col(header, "id") is not None:
+                    check_task_table(header, rows, violations, "HANDOFF.md", protected)
+    return apply_waivers(docs, violations, waived_out)
 
 
 LOOP_HEAD_RE = re.compile(r"^Loop\s+(\d+)\s*(?:—|-)?\s*(.*)$")
@@ -485,10 +630,17 @@ def build_report(run_dir: Path, protected, violations):
                 def cell(ix):
                     return r[ix] if ix is not None and ix < len(r) else ""
                 if cell(mi):
-                    report["metrics"].append({
+                    entry = {
                         "metric": cell(mi), "baseline": cell(bi), "final": cell(fi),
                         "delta": cell(di), "target": cell(ti), "verify": cell(vi), "status": cell(si),
-                    })
+                    }
+                    # Computed delta when both ends parse as numbers (review §2):
+                    # the reported Delta cell is echoed, never trusted as math.
+                    num = lambda s: (re.search(r"-?\d+(?:\.\d+)?", s) or [None]) and re.search(r"-?\d+(?:\.\d+)?", s)  # noqa: E731
+                    b_m, f_m = num(entry["baseline"]), num(entry["final"])
+                    if b_m and f_m:
+                        entry["delta_computed"] = round(float(f_m.group(0)) - float(b_m.group(0)), 6)
+                    report["metrics"].append(entry)
     tasks = [t for l in report["loops"] for t in l["tasks"]]
     by = lambda key: {k: sum(1 for t in tasks if t[key] == k)  # noqa: E731
                       for k in sorted({t[key] for t in tasks if t[key]})}
@@ -552,6 +704,8 @@ def load_fixture_meta(fdir: Path):
                 meta[k] = [x.strip() for x in v.strip("[]").split(",") if x.strip()]
             elif k in ("id", "expect", "description"):
                 meta[k] = v
+    if meta["expect"] not in ("pass", "fail"):  # F-6: a typo must not silently change semantics
+        raise SystemExit(f"fixture {fdir.name}: expect '{meta['expect']}' must be 'pass' or 'fail'")
     return meta
 
 
@@ -616,6 +770,38 @@ def run_all(as_json=False):
     return 0 if ok else 1
 
 
+def aggregate_reports(paths):
+    """Portfolio roll-up over per-run report JSONs (architect review §3.2)."""
+    import datetime
+    runs, by_code, by_sev = [], {}, {}
+    for p in paths:
+        r = json.loads(Path(p).read_text(encoding="utf-8"))
+        s = r.get("summary", {})
+        runs.append({
+            "run_dir": r.get("run_dir"), "protocol_version": r.get("protocol_version"),
+            "clean": s.get("clean"), "violations": s.get("violations", 0),
+            "waived": len(r.get("waived", [])), "tasks": s.get("tasks", 0),
+            "loops": s.get("loops", 0),
+        })
+        for code, n in s.get("violations_by_code", {}).items():
+            by_code[code] = by_code.get(code, 0) + n
+        for sev, n in s.get("tasks_by_severity", {}).items():
+            by_sev[sev] = by_sev.get(sev, 0) + n
+    return {
+        "schema": "code-audit-framework/portfolio@1",
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        "runs": runs,
+        "totals": {
+            "runs": len(runs),
+            "clean_runs": sum(1 for r in runs if r["clean"]),
+            "violations": sum(r["violations"] for r in runs),
+            "waived": sum(r["waived"] for r in runs),
+            "violations_by_code": dict(sorted(by_code.items())),
+            "tasks_by_severity": dict(sorted(by_sev.items())),
+        },
+    }
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", help="validate one run directory (containing docs/)")
@@ -623,22 +809,51 @@ def main():
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--report", choices=["json", "sarif"],
                     help="with --run: emit a structured findings report instead of plain violations")
+    ap.add_argument("--aggregate", nargs="+", metavar="REPORT_JSON",
+                    help="portfolio roll-up over per-run --report json files")
     ap.add_argument("--protected", default="", help="comma-separated protected paths (extends the target AUDIT.md's PROTECTED_AREAS)")
     args = ap.parse_args()
     if args.all:
         sys.exit(run_all(as_json=args.json))
+    if args.aggregate:
+        missing = [p for p in args.aggregate if not Path(p).is_file()]
+        if missing:
+            print(f"usage error: report file(s) not found: {', '.join(missing)}", file=sys.stderr)
+            sys.exit(2)
+        agg = aggregate_reports(args.aggregate)
+        if args.json:
+            print(json.dumps(agg, indent=2))
+        else:
+            t = agg["totals"]
+            print(f"{'Run':40s} {'proto':8s} {'clean':5s} {'viol':>4s} {'waived':>6s} {'tasks':>5s}")
+            for r in agg["runs"]:
+                print(f"{str(r['run_dir'])[:40]:40s} {str(r['protocol_version']):8s} "
+                      f"{'yes' if r['clean'] else 'NO':5s} {r['violations']:4d} {r['waived']:6d} {r['tasks']:5d}")
+            print(f"\n{t['clean_runs']}/{t['runs']} runs clean — {t['violations']} active violation(s), "
+                  f"{t['waived']} waived — by code: {t['violations_by_code'] or '{}'}")
+        sys.exit(0)
     if args.run:
+        run_path = Path(args.run)
+        if not run_path.exists():
+            print(f"usage error: --run path does not exist: {run_path}", file=sys.stderr)
+            sys.exit(2)
         protected = [p for p in args.protected.split(",") if p]
-        v = validate_run(Path(args.run), protected=protected)
+        waived = []
+        v = validate_run(run_path, protected=protected, waived_out=waived)
         if args.report:
-            report = build_report(Path(args.run), protected, v)
+            report = build_report(run_path, protected, v)
+            report["waived"] = waived
+            report["summary"]["waived"] = len(waived)
             print(json.dumps(to_sarif(report) if args.report == "sarif" else report, indent=2))
         elif args.json:
             print(json.dumps([{"code": c, "file": s, "detail": d} for c, s, d in v], indent=2))
         else:
             for c, s, d in v:
                 print(f"VIOLATION {c} [{s}] {d}")
-            print("CLEAN — no violations" if not v else f"{len(v)} violation(s)")
+            for w in waived:
+                print(f"WAIVED    {w['code']} [{w['file']}] until {w['expires']} — {w['reason']} (approved by {w['approved_by']})")
+            tail = "CLEAN — no violations" if not v else f"{len(v)} violation(s)"
+            print(tail + (f" ({len(waived)} waived)" if waived else ""))
         sys.exit(0 if not v else 1)
     ap.print_help()
     sys.exit(2)

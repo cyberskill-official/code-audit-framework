@@ -55,3 +55,13 @@ jobs:
 
       - name: Docs sync — every version / fixture-count surface agrees (BS-11)
         run: python3 evals/scripts/check-docs-sync.py
+
+      - name: Report contract — live report validates against schemas/report.v1.json
+        run: |
+          python3 -m pip install --quiet jsonschema
+          python3 evals/validate.py --run evals/fixtures/G01-clean-run --report json > /tmp/r.json
+          python3 - <<'PY'
+          import json, jsonschema
+          jsonschema.validate(json.load(open('/tmp/r.json')), json.load(open('schemas/report.v1.json')))
+          print("report@1 contract holds")
+          PY

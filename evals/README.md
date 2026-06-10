@@ -35,14 +35,33 @@ python3 evals/validate.py --all                  # full suite, human output
 python3 evals/validate.py --all --json           # machine-readable
 ./evals/run-evals.sh --record                    # run + pin baseline to current AUDIT.md
 python3 evals/validate.py --run <dir>            # validate a real run's docs/ output
-python3 evals/validate.py --run <dir> --report json   # structured findings export (loops, tasks, metrics, violations)
+python3 evals/validate.py --run <dir> --report json   # structured findings export (schemas/report.v1.json)
 python3 evals/validate.py --run <dir> --report sarif  # GitHub code-scanning format
+python3 evals/validate.py --aggregate r1.json r2.json # portfolio roll-up over report JSONs
 python3 evals/scripts/retro-summary.py           # retro scores per protocol version (did each release help?)
 ```
 
 Point `--run` at the target repo root (or its `docs/`): if the target's
 `AUDIT.md` is found, its CONFIG is preflighted and `PROTECTED_AREAS` is loaded
 automatically; `--protected` extends it.
+
+**Waivers.** A target repo may carry `docs/AUDIT-WAIVERS.yaml` — audit-trailed,
+*expiring* suppressions (`code` + optional `file`/`match` + `reason` +
+`approved_by` + mandatory ISO `expires`). A valid waiver suppresses the matched
+violation and is reported separately; an expired or undated one un-suppresses
+it AND flags the stale waiver (`WAIVER-EXPIRED`). This is the sanctioned
+exception channel — eval fixtures, by contrast, may never be weakened.
+
+**Parsing notes (precision boundaries, pinned by fixtures).** Tables inside
+``` fences are raw evidence, never artifacts (G07/B19). Tables must use
+leading-pipe GFM rows — the exact Phase 2 template shape; pipeless variants
+read as nonconformant. Protected-area matching is case-insensitive substring —
+keep CONFIG entries specific (`src/billing/`, not `src/`). Artifacts must be
+UTF-8 and ≤ 10 MB (`MALFORMED-FILE` otherwise, never a crash).
+
+**Version pinning.** The validator checks the *current* protocol's template.
+Validating artifacts produced under an older protocol? Pin the matching tag
+(validator and protocol release in lockstep: `v1.2.0` ↔ protocol v1.2.0).
 
 ## Adding a fixture
 

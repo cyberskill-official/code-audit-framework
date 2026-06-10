@@ -16,7 +16,7 @@ weakens a rule.
 | Protocol | [`AUDIT.md`](./AUDIT.md) — current release **v1.2.0** |
 | History | [`CHANGELOG.md`](./CHANGELOG.md) · immutable copies in [`improve/versions/`](./improve/versions/) |
 | Self-improvement | [`improve/CRITIC.md`](./improve/CRITIC.md) — one evidenced change per cycle |
-| Regression gate | [`evals/`](./evals/) — **24 fixtures, 24/24 green** at v1.2.0, stdlib-only Python; enforced in CI on every push |
+| Regression gate | [`evals/`](./evals/) — **32 fixtures, 32/32 green** at v1.2.0, stdlib-only Python; enforced in CI on every push |
 | For agents | [`AGENTS.md`](./AGENTS.md) — machine-facing operating rules for this repo |
 | License | [Apache-2.0](./LICENSE) · [`CONTRIBUTING.md`](./CONTRIBUTING.md) · [`SECURITY.md`](./SECURITY.md) |
 
@@ -169,8 +169,16 @@ uvx --from git+https://github.com/cyberskill-official/code-audit-framework@v1 \
     report: json   # optional; also writes audit-report.json
 ```
 
-(The packaged entry point covers `--run`/`--report`; the fixture suite
-`--all` stays repo-only, since fixtures ship with the repo, not the wheel.)
+(The packaged entry point covers `--run`/`--report`/`--aggregate`; the fixture
+suite `--all` stays repo-only, since fixtures ship with the repo, not the wheel.)
+
+Two operational notes: accepted exceptions go in the target's
+`docs/AUDIT-WAIVERS.yaml` — audit-trailed suppressions with a reason, an
+approver, and a **mandatory expiry** (expired waivers re-raise the finding and
+flag the stale waiver). And the validator is **offline by design**: stdlib-only,
+no network calls, no telemetry — nothing about the audited codebase leaves the
+machine, which makes it safe for air-gapped and regulated environments
+(see [`COMPLIANCE.md`](./COMPLIANCE.md)).
 
 **Improving the protocol itself, scripted the same way** (Job B in
 [`AGENTS.md`](./AGENTS.md) — the file agents are pointed at once they're
@@ -218,7 +226,7 @@ regression-tested, and changed only with evidence.
    improve/CRITIC.md         ──  ONE minimal change; PATCH/MINOR/MAJOR
                   │
                   ▼
-   evals/validate.py --all   ──  24 fixtures must stay green
+   evals/validate.py --all   ──  32 fixtures must stay green
                   │
                   ▼
    CHANGELOG.md + improve/versions/AUDIT-vX.Y.Z.md  (immutable release)
@@ -265,7 +273,7 @@ Full evidence trail: [`CHANGELOG.md`](./CHANGELOG.md),
 ## The regression harness
 
 ```bash
-python3 evals/validate.py --all      # 24 fixtures: G* must pass, B* must trip
+python3 evals/validate.py --all      # 32 fixtures: G* must pass, B* must trip
 ./evals/run-evals.sh --record        # run + pin baseline.json to AUDIT.md's sha256
 python3 evals/validate.py --run DIR  # validate any real run's docs/ output
 python3 evals/validate.py --run DIR --report json   # structured findings export (or: sarif)

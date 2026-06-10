@@ -27,6 +27,13 @@ Out of scope (by design, documented in `improve/BLINDSPOTS.md`):
   target repo's own CI.
 - Prompt-injection resistance of any particular LLM running the protocol.
 
+## Offline by design
+
+The validator is stdlib-only Python with **no network access and no
+telemetry**. Validating a client codebase sends nothing anywhere — suitable
+for air-gapped and regulated environments. Any future feature that would
+require network access must be opt-in and documented here first.
+
 ## Handling of secrets in this repo
 
 This repository's own artifacts are held to the protocol's R8: credentials

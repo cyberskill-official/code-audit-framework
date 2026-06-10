@@ -227,7 +227,7 @@ footer a:hover{text-decoration:underline}
   <div class="wrap">
     <div class="hero-grid">
       <div>
-        <span class="badge"><span class="dot" aria-hidden="true"></span> v1.2.0 · evals 24/24 green · AI-agnostic</span>
+        <span class="badge"><span class="dot" aria-hidden="true"></span> v1.2.0 · evals 32/32 green · AI-agnostic</span>
         <h1>Your coding agent audits like a pro.<br/><span class="ochre">And it never lies to you.</span></h1>
         <p class="sub">AUDIT.md is a ~160-line master prompt that turns Claude Code, Cursor, Gemini CLI, or Codex into an evidence-based codebase auditor. Every metric ships with the exact command and its raw output — or an honest <span class="mono">UNMEASURED</span>. No fabricated benchmarks. No padded findings. No fake "done".</p>
         <p class="slogan">TURN YOUR WILL INTO REAL — HIỆN THỰC HOÁ Ý CHÍ</p>
@@ -264,7 +264,7 @@ L2-T1 <span class="tk-r">High</span> Testing — parser failure paths uncovered
     <div class="stats">
       <div class="stat glass"><b>160<span style="color:#a35c12">↓</span></b><span>lines of protocol</span><span class="mono-sub">v1 was 1,898 — tightness is a feature</span></div>
       <div class="stat glass"><b>8</b><span>core rules, evidence-first</span><span class="mono-sub">R1–R8, critical rules placed first</span></div>
-      <div class="stat glass"><b>24/24</b><span>regression fixtures green</span><span class="mono-sub">fault-injection traps, stdlib only</span></div>
+      <div class="stat glass"><b>32/32</b><span>regression fixtures green</span><span class="mono-sub">fault-injection traps, stdlib only</span></div>
       <div class="stat glass"><b>5</b><span>self-improvement cycles run</span><span class="mono-sub">3 releases, stopped by its own rule</span></div>
     </div>
   </div>
@@ -385,13 +385,13 @@ L2-T1 <span class="tk-r">High</span> Testing — parser failure paths uncovered
     <div style="margin-top:var(--sp-6)" class="card glass-heavy">
       <h3>The regression gate, in one command</h3>
       <p style="margin:8px 0 14px;font-size:14px;color:#5b3a22">Twelve fault-injection traps plant exactly one violation each — a fabricated metric, an uncited "Palantir-grade" target, a leaked AWS key, an unapproved execution. The validator must catch each planted fault and nothing else. A trap that stops tripping means a rule has died — and the edit is blocked.</p>
-      <div class="codeblock" role="img" aria-label="Eval harness output showing 24 of 24 fixtures green">$ python3 evals/validate.py --all
+      <div class="codeblock" role="img" aria-label="Eval harness output showing 32 of 32 fixtures green">$ python3 evals/validate.py --all
 <span class="g">[PASS]</span> B01-fabricated-metric      <span class="c">expect=fail → trapped as expected</span>
 <span class="g">[PASS]</span> B07-secret-leak            <span class="c">expect=fail → trapped as expected</span>
 <span class="g">[PASS]</span> B12-gated-unapproved-exec  <span class="c">expect=fail → trapped as expected</span>
 <span class="g">[PASS]</span> G01-clean-run              <span class="c">expect=pass → clean</span>
 <span class="c">… 12 more …</span>
-<span class="y">24/24 fixtures OK — ALL GREEN</span></div>
+<span class="y">32/32 fixtures OK — ALL GREEN</span></div>
     </div>
   </div>
 </section>
@@ -465,7 +465,7 @@ L2-T1 <span class="tk-r">High</span> Testing — parser failure paths uncovered
     </div>
     <div class="legal">
       <span>© 2020–2026 CYBERSKILL SOFTWARE SOLUTIONS CONSULTANCY AND DEVELOPMENT JOINT STOCK COMPANY</span>
-      <span class="mono">AUDIT.md v1.2.0 · evals 24/24 · made with Liquid Glass</span>
+      <span class="mono">AUDIT.md v1.2.0 · evals 32/32 · made with Liquid Glass</span>
     </div>
   </div>
 </footer>
