@@ -46,6 +46,10 @@ python3 evals/validate.py --run <dir>    # validate a real run's docs/ output
 
 ## What the validator cannot see (declared gaps)
 
+The authoritative register is [`improve/BLINDSPOTS.md`](../improve/BLINDSPOTS.md)
+— one row per blind spot, with status and evidence. Headlines:
+
 - Whether code changes were genuinely valuable (retro item 9 — human judgment).
 - Whether findings were padded (retro item 3 — judgment; the validator only guarantees padding is never *required*).
 - Live-agent properties: actual command execution, 3-strike counting, resume behavior (R4). For hard guarantees on those, use deterministic hooks/CI in the target repo, not prompt text.
+- Run completeness: `--run` accepts a docs/ directory without HANDOFF.md (legitimate mid-flight). When reviewing a run that claims to be finished, confirm HANDOFF.md exists yourself (BS-09).

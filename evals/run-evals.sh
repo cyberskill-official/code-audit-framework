@@ -18,6 +18,14 @@ if [[ "${1:-}" == "--record" && $STATUS -eq 0 ]]; then
   python3 "$HERE/validate.py" --all --json > "$TMP"
   FP="$( (shasum -a 256 "$ROOT/AUDIT.md" 2>/dev/null || sha256sum "$ROOT/AUDIT.md") | cut -d' ' -f1)"
   VERSION="$(head -1 "$ROOT/AUDIT.md" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || echo unknown)"
+  # Version-drift guard (improve/BLINDSPOTS.md BS-11): refuse to pin a baseline
+  # when the protocol's title version and package.json disagree.
+  PKG_VERSION="v$(python3 -c "import json;print(json.load(open('$ROOT/package.json'))['version'])" 2>/dev/null || echo unknown)"
+  if [[ "$VERSION" != "$PKG_VERSION" ]]; then
+    echo "VERSION DRIFT: AUDIT.md title says $VERSION but package.json says $PKG_VERSION — align before recording." >&2
+    rm -f "$TMP"
+    exit 1
+  fi
   RESULTS="$TMP" FP="$FP" VERSION="$VERSION" OUT="$HERE/baseline.json" python3 <<'PY'
 import json, os, datetime, pathlib
 data = json.load(open(os.environ["RESULTS"]))

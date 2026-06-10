@@ -5,68 +5,123 @@
   "rules": [
     {
       "rule_id": "R1",
-      "anchor": "CORE RULES > R1 — EVIDENCE OR NOTHING",
-      "violation_codes": ["R1-NO-OUTPUT", "R1-UNLINKED-OUTPUT", "R1-NO-REASON", "R1-GUI-TOOL"],
-      "fixtures_exercising": ["G01-clean-run", "B01-fabricated-metric", "B02-gui-tool-verify", "B10-unmeasured-no-reason", "B11-unlinked-output"]
+      "anchor": "CORE RULES > R1 \u2014 EVIDENCE OR NOTHING",
+      "violation_codes": [
+        "R1-NO-OUTPUT",
+        "R1-UNLINKED-OUTPUT",
+        "R1-NO-REASON",
+        "R1-GUI-TOOL"
+      ],
+      "fixtures_exercising": [
+        "G01-clean-run",
+        "B01-fabricated-metric",
+        "B02-gui-tool-verify",
+        "B10-unmeasured-no-reason",
+        "B11-unlinked-output"
+      ]
     },
     {
       "rule_id": "R2",
-      "anchor": "CORE RULES > R2 — HONEST TARGETS ONLY",
-      "violation_codes": ["R2-UNCITED", "R2-NONNUMERIC"],
-      "fixtures_exercising": ["G01-clean-run", "B03-uncited-sota", "B04-nonnumeric-target"]
+      "anchor": "CORE RULES > R2 \u2014 HONEST TARGETS ONLY",
+      "violation_codes": [
+        "R2-UNCITED",
+        "R2-NONNUMERIC"
+      ],
+      "fixtures_exercising": [
+        "G01-clean-run",
+        "B03-uncited-sota",
+        "B04-nonnumeric-target"
+      ]
     },
     {
       "rule_id": "R3",
-      "anchor": "CORE RULES > R3 — PROTECT THE CORE",
-      "violation_codes": ["R3-PROTECTED"],
-      "fixtures_exercising": ["B09-protected-area-touched"],
-      "coverage_note": "Validator checks task rows against fixture-declared protected_areas. Behavioral preservation itself is NOT machine-checkable here — enforce with tests/hooks in the target repo."
+      "anchor": "CORE RULES > R3 \u2014 PROTECT THE CORE",
+      "violation_codes": [
+        "R3-PROTECTED"
+      ],
+      "fixtures_exercising": [
+        "B09-protected-area-touched"
+      ],
+      "coverage_note": "Validator checks task rows against fixture-declared protected_areas. Behavioral preservation itself is NOT machine-checkable here \u2014 enforce with tests/hooks in the target repo."
     },
     {
       "rule_id": "R4",
-      "anchor": "CORE RULES > R4 — FILE IS MEMORY",
+      "anchor": "CORE RULES > R4 \u2014 FILE IS MEMORY",
       "violation_codes": [],
       "fixtures_exercising": [],
       "coverage_note": "Resume behavior is a live-agent property; not checkable from artifacts alone. Acknowledged gap."
     },
     {
       "rule_id": "R5",
-      "anchor": "CORE RULES > R5 — ONE TASK AT A TIME (closed sets)",
-      "violation_codes": ["R5-BAD-STATUS", "R5-BAD-SEV", "R5-BAD-ID"],
-      "fixtures_exercising": ["G01-clean-run", "B05-bad-status"]
+      "anchor": "CORE RULES > R5 \u2014 ONE TASK AT A TIME (closed sets)",
+      "violation_codes": [
+        "R5-BAD-STATUS",
+        "R5-BAD-SEV",
+        "R5-BAD-ID"
+      ],
+      "fixtures_exercising": [
+        "G01-clean-run",
+        "B05-bad-status"
+      ]
     },
     {
       "rule_id": "R6",
-      "anchor": "CORE RULES > R6 — CIRCUIT BREAKER",
-      "violation_codes": ["R6-NO-ROOTCAUSE"],
-      "fixtures_exercising": ["G01-clean-run", "B08-blocked-no-rootcause"],
+      "anchor": "CORE RULES > R6 \u2014 CIRCUIT BREAKER",
+      "violation_codes": [
+        "R6-NO-ROOTCAUSE"
+      ],
+      "fixtures_exercising": [
+        "G01-clean-run",
+        "B08-blocked-no-rootcause"
+      ],
       "coverage_note": "The 3-strike count itself is a live-agent property; only the BLOCKED+root-cause artifact is checked."
     },
     {
       "rule_id": "R7",
-      "anchor": "CORE RULES > R7 — SEVERITY-WEIGHTED, NOT QUOTA'D",
+      "anchor": "CORE RULES > R7 \u2014 SEVERITY-WEIGHTED, NOT QUOTA'D",
       "violation_codes": [],
-      "fixtures_exercising": ["G02-no-findings-valid"],
-      "coverage_note": "Positive-path fixture: a zero-findings loop MUST validate clean. Padding detection is judgment-based — covered by retrospective item 3, not the validator."
+      "fixtures_exercising": [
+        "G02-no-findings-valid"
+      ],
+      "coverage_note": "Positive-path fixture: a zero-findings loop MUST validate clean. Padding detection is judgment-based \u2014 covered by retrospective item 3, not the validator."
     },
     {
       "rule_id": "R8",
-      "anchor": "CORE RULES > R8 — REDACT SECRETS",
-      "violation_codes": ["R8-SECRET"],
-      "fixtures_exercising": ["G01-clean-run", "B07-secret-leak"]
+      "anchor": "CORE RULES > R8 \u2014 REDACT SECRETS",
+      "violation_codes": [
+        "R8-SECRET"
+      ],
+      "fixtures_exercising": [
+        "G01-clean-run",
+        "B07-secret-leak"
+      ]
     },
     {
       "rule_id": "P2-GATE",
-      "anchor": "PHASE 2 — gated-mode approval artifact",
-      "violation_codes": ["GATED-UNAPPROVED-EXEC"],
-      "fixtures_exercising": ["G01-clean-run", "B12-gated-unapproved-exec"],
+      "anchor": "PHASE 2 \u2014 gated-mode approval artifact",
+      "violation_codes": [
+        "GATED-UNAPPROVED-EXEC"
+      ],
+      "fixtures_exercising": [
+        "G01-clean-run",
+        "B12-gated-unapproved-exec"
+      ],
       "coverage_note": "Checked only when an `Approved:` line is present in a loop section; autonomous runs carry no such line."
     },
     {
       "rule_id": "P5",
-      "anchor": "PHASE 5 — HANDOFF (stop-condition citation; closed metric-status set)",
-      "violation_codes": ["P5-NO-STOP-REASON", "HANDOFF-BAD-MSTATUS"],
-      "fixtures_exercising": ["G01-clean-run", "G02-no-findings-valid", "B06-missing-stop-reason", "B13-bad-metric-status"]
+      "anchor": "PHASE 5 \u2014 HANDOFF (stop-condition citation; closed metric-status set)",
+      "violation_codes": [
+        "P5-NO-STOP-REASON",
+        "HANDOFF-BAD-MSTATUS"
+      ],
+      "fixtures_exercising": [
+        "G01-clean-run",
+        "G02-no-findings-valid",
+        "B06-missing-stop-reason",
+        "B13-bad-metric-status"
+      ],
+      "coverage_note": "HANDOFF.md presence itself is not required by --run (mid-flight runs are legitimate), so a 'finished' run that skipped Phase 5 validates clean \u2014 reviewers of completed runs must confirm the file exists. See improve/BLINDSPOTS.md BS-09."
     }
   ]
 }

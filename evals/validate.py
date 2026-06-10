@@ -53,7 +53,12 @@ GUI_TOOLS = [
 SECRET_PATTERNS = [
     ("aws-key", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
     ("github-token", re.compile(r"\bghp_[A-Za-z0-9]{36}\b")),
+    ("gitlab-token", re.compile(r"\bglpat-[A-Za-z0-9_-]{20}\b")),
     ("stripe-key", re.compile(r"\bsk_live_[A-Za-z0-9]{16,}\b")),
+    ("anthropic-key", re.compile(r"\bsk-ant-[A-Za-z0-9_-]{16,}\b")),
+    ("openai-key", re.compile(r"\bsk-proj-[A-Za-z0-9_-]{20,}\b")),
+    ("google-api-key", re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b")),
+    ("npm-token", re.compile(r"\bnpm_[A-Za-z0-9]{36}\b")),
     ("slack-token", re.compile(r"\bxox[bpoas]-[0-9A-Za-z-]{10,}\b")),
     ("private-key", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----")),
     ("jwt", re.compile(r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b")),
@@ -303,9 +308,36 @@ def load_fixture_meta(fdir: Path):
     return meta
 
 
+def check_registry(fixture_dirs):
+    """Registry drift guard (improve/BLINDSPOTS.md BS-10): rules.json must
+    agree with fixtures/ on disk, in both directions. A rule referencing a
+    missing fixture means its coverage silently died; an unregistered fixture
+    means coverage the registry does not own."""
+    problems = []
+    reg = HERE / "rules.json"
+    if not reg.exists():
+        return ["rules.json missing — registry is mandatory"]
+    try:
+        data = json.loads(reg.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        return [f"rules.json unparseable: {e}"]
+    on_disk = {d.name for d in fixture_dirs}
+    referenced = set()
+    for rule in data.get("rules", []):
+        for fx in rule.get("fixtures_exercising", []):
+            referenced.add(fx)
+            if fx not in on_disk:
+                problems.append(f"rules.json: {rule.get('rule_id', '?')} references missing fixture '{fx}'")
+    for d in sorted(on_disk - referenced):
+        problems.append(f"fixture '{d}' exists on disk but is registered under no rule in rules.json")
+    return problems
+
+
 def run_all(as_json=False):
     results, ok = [], True
     fixtures = sorted(d for d in FIXTURES.iterdir() if d.is_dir())
+    registry_problems = check_registry(fixtures)
+    ok &= not registry_problems
     for fdir in fixtures:
         meta = load_fixture_meta(fdir)
         violations = validate_run(fdir, protected=meta["protected_areas"])
@@ -323,10 +355,13 @@ def run_all(as_json=False):
             "violations": [f"{c} [{s}] {d}" for c, s, d in violations],
             "codes": codes, "ok": fixture_ok, "note": verdict_note,
         })
-    summary = {"fixtures": len(results), "passed": sum(r["ok"] for r in results), "all_ok": ok, "results": results}
+    summary = {"fixtures": len(results), "passed": sum(r["ok"] for r in results), "all_ok": ok,
+               "registry_problems": registry_problems, "results": results}
     if as_json:
         print(json.dumps(summary, indent=2))
     else:
+        for p in registry_problems:
+            print(f"[FAIL] REGISTRY DRIFT — {p}")
         for r in results:
             print(f"[{'PASS' if r['ok'] else 'FAIL'}] {r['fixture']:32s} expect={r['expect']:4s} → {r['note']}")
         print(f"\n{summary['passed']}/{summary['fixtures']} fixtures OK — "
