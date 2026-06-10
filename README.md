@@ -13,11 +13,12 @@ weakens a rule.
 
 | | |
 |---|---|
-| Protocol | [`AUDIT.md`](./AUDIT.md) — current release **v1.1.0** |
+| Protocol | [`AUDIT.md`](./AUDIT.md) — current release **v1.2.0** |
 | History | [`CHANGELOG.md`](./CHANGELOG.md) · immutable copies in [`improve/versions/`](./improve/versions/) |
 | Self-improvement | [`improve/CRITIC.md`](./improve/CRITIC.md) — one evidenced change per cycle |
-| Regression gate | [`evals/`](./evals/) — **16 fixtures, 16/16 green** at v1.1.0, stdlib-only Python |
+| Regression gate | [`evals/`](./evals/) — **24 fixtures, 24/24 green** at v1.2.0, stdlib-only Python; enforced in CI on every push |
 | For agents | [`AGENTS.md`](./AGENTS.md) — machine-facing operating rules for this repo |
+| License | [Apache-2.0](./LICENSE) · [`CONTRIBUTING.md`](./CONTRIBUTING.md) · [`SECURITY.md`](./SECURITY.md) |
 
 ---
 
@@ -153,7 +154,7 @@ regression-tested, and changed only with evidence.
    improve/CRITIC.md         ──  ONE minimal change; PATCH/MINOR/MAJOR
                   │
                   ▼
-   evals/validate.py --all   ──  16 fixtures must stay green
+   evals/validate.py --all   ──  24 fixtures must stay green
                   │
                   ▼
    CHANGELOG.md + improve/versions/AUDIT-vX.Y.Z.md  (immutable release)
@@ -179,6 +180,17 @@ and ran one cycle: **v1.1.0** echoes `Mode:` in every backlog, closing a
 demonstrated gated-mode evasion (BS-08). Evals: 16/16. Stop condition (c):
 fixed cycle count requested by the maintainer.
 
+Campaign 3 (2026-06-10, production-readiness pass) re-verified the register,
+adopted a structural review as its evidence base, and landed the hardening that
+makes the suite trustworthy on hostile output: a template-conformance
+meta-tripwire (non-template output can no longer silently escape every check —
+BS-12), a CONFIG preflight with `PROTECTED_AREAS` auto-load (BS-13), a
+precision fixture pack (G:B ratio 2:14 → 6:18), structured findings export
+(`--report json|sarif`), a retro-score aggregator, and the CI gate. One
+protocol change: **v1.2.0** — Phase 0 now STOPs on placeholder or out-of-set
+CONFIG instead of letting the agent improvise it. Evals: 24/24. Stop condition
+(b): every failure-log row promoted or explicitly deferred.
+
 Full evidence trail: [`CHANGELOG.md`](./CHANGELOG.md),
 [`improve/FAILURE_LOG.md`](./improve/FAILURE_LOG.md),
 [`improve/BLINDSPOTS.md`](./improve/BLINDSPOTS.md),
@@ -189,9 +201,10 @@ Full evidence trail: [`CHANGELOG.md`](./CHANGELOG.md),
 ## The regression harness
 
 ```bash
-python3 evals/validate.py --all      # 16 fixtures: G* must pass, B* must trip
+python3 evals/validate.py --all      # 24 fixtures: G* must pass, B* must trip
 ./evals/run-evals.sh --record        # run + pin baseline.json to AUDIT.md's sha256
 python3 evals/validate.py --run DIR  # validate any real run's docs/ output
+python3 evals/validate.py --run DIR --report json   # structured findings export (or: sarif)
 ```
 
 Zero dependencies (Python stdlib). Each `B*` fixture is a **fault-injection

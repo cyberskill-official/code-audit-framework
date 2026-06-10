@@ -15,6 +15,13 @@ Versioning: **MAJOR.MINOR.PATCH**
 
 ---
 
+## v1.2.0 — 2026-06-10 (improvement campaign 3, cycle 1)
+
+- **MINOR: Phase 0 gains a CONFIG preflight.** Three lines: if any CONFIG value still contains `<placeholder>` text, or MODE / DEPTH / BENCHMARK_MODE / SEVERITY_FLOOR is outside its allowed set, the agent STOPs and asks the human instead of improvising CONFIG. Closes the most likely first-run failure mode on a new codebase: a half-filled CONFIG silently "completed" by the agent, which then audits against invented constraints.
+- **Trigger:** Structural review 2026-06-10, gap G-D — CONFIG improvisation is the documented norm for agents handed partial configs; nothing in the protocol or the validator checked CONFIG sanity (FAILURE_LOG row "CONFIG improvisation", promoted this cycle). Protocol side of `improve/BLINDSPOTS.md` BS-13.
+- **Harness, same cycle (landed as the preceding infra commit):** the validator preflights the target AUDIT.md's CONFIG — `CONFIG-PLACEHOLDER` / `CONFIG-BAD-ENUM` (trap fixture `B17-config-placeholder`) — and auto-loads `PROTECTED_AREAS` into the R3 tripwire (`B18-config-autoprotect`), retiring the `--protected` double entry (gap G-F). Instruction budget: 161 → 164 lines, within the 200-line cap. Evals: **24/24 green**, baseline re-recorded at v1.2.0.
+- **Also in this campaign (infra, not protocol changes):** template-conformance meta-tripwire `TEMPLATE-NONCONFORMANT` (BS-12 — non-template output no longer escapes every check; fixtures B15/G05/G06), compound exact-set fixture (B16), precision pack G03/G04 (G:B ratio 2:14 → 6:18), `--report json|sarif` findings export, `evals/scripts/retro-summary.py`, Apache-2.0 LICENSE + NOTICE, CI eval gate (suite + version-sync + baseline sha256 + snapshot immutability), CONTRIBUTING.md, SECURITY.md.
+
 ## v1.1.0 — 2026-06-10 (improvement campaign 2, cycle 1)
 
 - **MINOR: The backlog now echoes its MODE.** Phase 2's "Scope & method" template line gains a leading `Mode: <MODE>` field. This makes the gated-mode guarantee post-hoc enforceable: the validator now flags any loop section that declares `Mode: gated` and contains executed tasks (DONE / IN-PROGRESS / BLOCKED) without an `Approved:` line — previously the check fired only when the line already existed, so *omitting it entirely* evaded the gate.
