@@ -1,0 +1,44 @@
+name: publish
+
+# Publishes code-audit-validator to PyPI when a GitHub Release is published.
+# Auth: PYPI_API_TOKEN repo secret. Recommended upgrade once convenient:
+# PyPI Trusted Publishing (OIDC) — add this repo as a trusted publisher on
+# pypi.org, then drop the token entirely (set `id-token: write` and remove
+# the `password:` line; pypa/gh-action-pypi-publish handles the rest).
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # Protocol releases are tagged vX.Y.Z; skip floating tags like v1.
+    if: ${{ startsWith(github.event.release.tag_name, 'v') && contains(github.event.release.tag_name, '.') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Gate — suite + docs sync must be green before anything ships
+        run: |
+          python3 evals/validate.py --all
+          python3 evals/scripts/check-docs-sync.py
+
+      - name: Gate — release tag must match the protocol version
+        run: |
+          V="$(head -1 AUDIT.md | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')"
+          [ "${{ github.event.release.tag_name }}" = "$V" ] \
+            || { echo "::error::release tag ${{ github.event.release.tag_name }} != protocol $V"; exit 1; }
+
+      - name: Build sdist + wheel
+        run: |
+          python3 -m pip install --quiet build
+          python3 -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}

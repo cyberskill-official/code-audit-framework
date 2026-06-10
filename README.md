@@ -152,8 +152,11 @@ the GitHub Action below. Re-running the same kickoff prompt resumes idempotently
 **No clone needed — two distribution channels for step 3:**
 
 ```bash
-# One-off (uv) — or pipx install the same URL for a persistent command.
-# @v1 = floating major tag; pin an exact release tag (> v1.2.0) for immutability.
+# From PyPI (https://pypi.org/project/code-audit-validator/):
+pipx install code-audit-validator          # or: uvx code-audit-validate --run .
+code-audit-validate --run . --report json
+
+# Or straight from the repo (@v1 = floating major tag; pin a release tag for immutability):
 uvx --from git+https://github.com/cyberskill-official/code-audit-framework@v1 \
     code-audit-validate --run . --report json
 ```

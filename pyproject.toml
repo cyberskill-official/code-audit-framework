@@ -38,10 +38,12 @@ Homepage = "https://github.com/cyberskill-official/code-audit-framework"
 Changelog = "https://github.com/cyberskill-official/code-audit-framework/blob/main/CHANGELOG.md"
 
 [project.scripts]
-code-audit-validate = "validate:main"
+code-audit-validate = "code_audit_validator:main"
 
 [tool.setuptools]
-py-modules = ["validate"]
+# Single module, properly namespaced — the wheel must NOT claim the generic
+# top-level name `validate` (evals/validate.py is a repo-only CLI shim).
+py-modules = ["code_audit_validator"]
 
 [tool.setuptools.package-dir]
 "" = "evals"

@@ -21,7 +21,8 @@ AUDIT.md so R3 needs no `--protected` double entry — BS-13).
 
 | File | Role |
 |---|---|
-| `validate.py` | The validator. Zero dependencies (stdlib only). |
+| `code_audit_validator.py` | The validator implementation. Zero dependencies (stdlib only); published to PyPI as `code-audit-validator`. |
+| `validate.py` | Repo-side CLI shim over the module above — every documented `python3 evals/validate.py …` invocation goes through it. |
 | `fixtures/` | `G*` = compliant outputs that must pass. `B*` = fault-injection traps that must fail with declared codes. |
 | `rules.json` | Rule registry: rule → AUDIT.md anchor → violation codes → fixtures proving it. Coverage gaps are declared honestly. |
 | `baseline.json` | Last recorded matrix (fixture → outcome) pinned to an AUDIT.md version + sha256. |
