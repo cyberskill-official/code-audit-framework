@@ -60,6 +60,12 @@ def main():
     if not vm or "v" + ".".join(vm.groups()) != ver:
         problems.append(f"code_audit_validator.py CURRENT_PROTOCOL {'v' + '.'.join(vm.groups()) if vm else '(missing)'} != {ver} — version-aware template gating out of lockstep")
 
+    cff = ROOT / "CITATION.cff"
+    if cff.exists():
+        cm = re.search(r"(?m)^version:\s*(\S+)", cff.read_text(encoding="utf-8"))
+        if not cm or cm.group(1) != bare:
+            problems.append(f"CITATION.cff version {cm.group(1) if cm else '(missing)'} != {bare}")
+
     baseline = json.loads((CORE / "evals" / "baseline.json").read_text(encoding="utf-8"))
     if baseline.get("audit_md_version") != ver:
         problems.append(f"baseline.json audit_md_version {baseline.get('audit_md_version')} != {ver}")

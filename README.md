@@ -351,6 +351,7 @@ docs/                      ← human documents (GitHub surfaces these from docs/
 | How to contribute / report a protocol failure | [`docs/CONTRIBUTING.md`](./docs/CONTRIBUTING.md) |
 | Security policy | [`docs/SECURITY.md`](./docs/SECURITY.md) |
 | Compliance / control mapping | [`docs/COMPLIANCE.md`](./docs/COMPLIANCE.md) |
+| Community standards | [`docs/CODE_OF_CONDUCT.md`](./docs/CODE_OF_CONDUCT.md) |
 
 Note: when AUDIT.md is run **on this repo itself**, its output artifacts
 (`docs/BACKLOG.md`, `docs/HANDOFF.md`, `docs/AUDIT-WAIVERS.yaml`) are

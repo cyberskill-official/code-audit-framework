@@ -74,6 +74,6 @@ contracts (report.v1, feedback.v1).
 **`site/` (community page):** `index.html` + `assets/` (CyberSkill design
 system; deployed by `.github/workflows/pages.yml`, which ships ONLY site/).
 **`docs/` (human documents):** `CONTRIBUTING.md` · `SECURITY.md` ·
-`COMPLIANCE.md` (GitHub surfaces health files from docs/).
+`COMPLIANCE.md` · `CODE_OF_CONDUCT.md` (GitHub surfaces health files from docs/).
 **`.github/workflows/`:** evals CI gate · publish (PyPI via OIDC) · pages —
 all actions SHA-pinned.
