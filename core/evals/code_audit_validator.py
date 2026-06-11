@@ -725,6 +725,15 @@ def build_report(run_dir: Path, protected, violations):
                             "vector": cell(vec_i), "description": cell(d_i), "verify": cell(v_i),
                         })
             report["loops"].append(loop)
+    # Provenance in runner mode (no target AUDIT.md to read a version from):
+    # fall back to the protocol the artifact itself declares in its Scope line.
+    # Copy mode (AUDIT.md present) still wins. Surfaced by the first live
+    # runner-mode field run, 2026-06-12.
+    if report["protocol_version"] is None:
+        for lp in report["loops"]:
+            if lp.get("protocol"):
+                report["protocol_version"] = lp["protocol"]
+                break
     handoff = docs / "HANDOFF.md"
     if handoff.exists():
         text = handoff.read_text(encoding="utf-8")

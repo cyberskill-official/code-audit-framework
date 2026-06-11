@@ -60,8 +60,14 @@ jobs:
         run: |
           python3 -m pip install --quiet jsonschema
           python3 core/evals/validate.py --run core/evals/fixtures/G01-clean-run --report json > /tmp/r.json
+          python3 core/evals/validate.py --run core/evals/fixtures/G11-runner-config-valid --report json > /tmp/r_runner.json
           python3 - <<'PY'
           import json, jsonschema
-          jsonschema.validate(json.load(open('/tmp/r.json')), json.load(open('core/schemas/report.v1.json')))
-          print("report@1 contract holds")
+          schema = json.load(open('core/schemas/report.v1.json'))
+          jsonschema.validate(json.load(open('/tmp/r.json')), schema)
+          # Runner-mode provenance must survive into the report (FAILURE_LOG 2026-06-12):
+          runner = json.load(open('/tmp/r_runner.json'))
+          jsonschema.validate(runner, schema)
+          assert runner['protocol_version'] == 'v1.3.0', f"runner-mode report dropped provenance: {runner['protocol_version']}"
+          print("report@1 contract holds; runner-mode provenance carried")
           PY
