@@ -1,18 +1,24 @@
 name: publish
 
 # Publishes code-audit-validator to PyPI when a GitHub Release is published.
-# Auth: PYPI_API_TOKEN repo secret. Recommended upgrade once convenient:
-# PyPI Trusted Publishing (OIDC) — add this repo as a trusted publisher on
-# pypi.org, then drop the token entirely (set `id-token: write` and remove
-# the `password:` line; pypa/gh-action-pypi-publish handles the rest).
+# Auth: PyPI Trusted Publishing (OIDC) — this repo + this workflow are
+# registered as a trusted publisher on pypi.org (configured 2026-06-11).
+# No long-lived credential exists anywhere; the job mints a short-lived
+# identity token per run (`id-token: write`).
 
 on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # OIDC token for PyPI Trusted Publishing
+      contents: read
     # Protocol releases are tagged vX.Y.Z; skip floating tags like v1.
     if: ${{ startsWith(github.event.release.tag_name, 'v') && contains(github.event.release.tag_name, '.') }}
     steps:
@@ -38,7 +44,5 @@ jobs:
           python3 -m pip install --quiet build
           python3 -m build
 
-      - name: Publish to PyPI
+      - name: Publish to PyPI (Trusted Publishing / OIDC)
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
