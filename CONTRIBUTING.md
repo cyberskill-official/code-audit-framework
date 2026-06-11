@@ -18,7 +18,9 @@ change per cycle, every time. No exceptions, including "obvious" fixes.
   register it in `evals/rules.json`.
 - Release ritual: bump the title version → snapshot to
   `improve/versions/AUDIT-v<x.y.z>.md` → `CHANGELOG.md` entry → retro in
-  `improve/retros/` → `./evals/run-evals.sh --record` → tag `v<x.y.z>` and
+  `improve/retros/` → `./evals/run-evals.sh --record` → regenerate the social
+  card (`python3 assets/make-social-card.py` — it reads version and fixture
+  count itself; re-upload in Settings → Social preview) → tag `v<x.y.z>` and
   move the floating `v1` tag to the release commit (consumers pin the Action
   and pipx installs to it).
 
