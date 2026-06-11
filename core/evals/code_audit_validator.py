@@ -199,13 +199,21 @@ def load_profile(target_root: Path, violations):
           - name: acme-internal-token
             regex: "\\\\bacme_[A-Za-z0-9]{20}\\\\b"
 
-    Returns (gui_tools, secret_patterns). A bad regex is an artifact problem
-    and yields MALFORMED-FILE (verdict, not traceback) for that entry."""
+    Runner mode (the profile is the target's COMPLETE audit identity): an
+    optional `config:` section carries the same KEY: value pairs as AUDIT.md's
+    CONFIG block, so the protocol itself never has to be copied into the
+    target — it stays single-source in the framework repo. Precedence: a full
+    AUDIT.md copy at the target root wins over the profile's config: (copy
+    mode = self-contained/pinned; runner mode = always-current protocol).
+
+    Returns (gui_tools, secret_patterns, config). A bad regex is an artifact
+    problem and yields MALFORMED-FILE (verdict, not traceback) for that entry."""
     gui = list(GUI_TOOLS)
     secrets = list(SECRET_PATTERNS)
+    cfg = {}
     f = target_root / "audit-profile.yaml"
     if not f.exists():
-        return gui, secrets
+        return gui, secrets, cfg
     section, cur = None, None
     for raw in f.read_text(encoding="utf-8", errors="replace").splitlines():
         line = raw.rstrip()
@@ -217,6 +225,15 @@ def load_profile(target_root: Path, violations):
             continue
         if s == "secret_patterns:":
             section, cur = "secrets", None
+            continue
+        if s == "config:":
+            section, cur = "config", None
+            continue
+        if section == "config":
+            m = CONFIG_KEY_RE.match(s)
+            if m:
+                key, raw_val = m.groups()
+                cfg[key] = re.split(r"\s{2,}#", raw_val, 1)[0].strip()
             continue
         if section == "gui" and s.startswith("- "):
             gui.append(s[2:].strip().strip("\"'").lower())
@@ -235,7 +252,7 @@ def load_profile(target_root: Path, violations):
                     violations.append(("MALFORMED-FILE", "audit-profile.yaml",
                                        f"secret pattern '{cur['name']}' has an invalid regex: {e}"))
                 cur["_done"] = True
-    return gui, secrets
+    return gui, secrets, cfg
 
 
 def check_benchmark_like_table(header, rows, end_idx, text, violations, src, is_handoff, gui_tools=None):
@@ -472,23 +489,30 @@ def parse_audit_config(audit_md: Path):
     return cfg
 
 
-def check_config_preflight(target_root: Path, violations, protected):
+def check_config_preflight(target_root: Path, violations, protected, profile_cfg=None):
     """Phase 0 CONFIG preflight (review gap G-D) + PROTECTED_AREAS auto-load
-    (gap G-F). Runs only when the target's AUDIT.md is present; placeholder
-    values never silently configure anything. Enum values are compared on the
-    first whitespace token, so an inline trailing comment can't fail the enum."""
+    (gap G-F). Config source precedence: the target's AUDIT.md copy if present
+    (copy mode), else the audit-profile.yaml `config:` section (runner mode —
+    the protocol stays in the framework repo). Placeholder values never
+    silently configure anything. Enum values are compared on the first
+    whitespace token, so an inline trailing comment can't fail the enum."""
     audit = target_root / "AUDIT.md"
-    if not audit.exists():
+    if audit.exists():
+        cfg = parse_audit_config(audit)
+        src = "AUDIT.md"
+    elif profile_cfg:
+        cfg = profile_cfg
+        src = "audit-profile.yaml"
+    else:
         return
-    cfg = parse_audit_config(audit)
     for key, val in cfg.items():
         if is_placeholder(val):
-            violations.append(("CONFIG-PLACEHOLDER", "AUDIT.md",
+            violations.append(("CONFIG-PLACEHOLDER", src,
                                f"{key} still contains unedited template text: '{val[:60]}'"))
         elif key in CONFIG_ENUMS and val:
             token = val.split()[0]
             if token not in CONFIG_ENUMS[key]:
-                violations.append(("CONFIG-BAD-ENUM", "AUDIT.md",
+                violations.append(("CONFIG-BAD-ENUM", src,
                                    f"{key} '{token}' not in {sorted(CONFIG_ENUMS[key])}"))
     areas = cfg.get("PROTECTED_AREAS", "")
     if areas and not is_placeholder(areas):
@@ -605,8 +629,8 @@ def validate_run(run_dir: Path, protected=None, waived_out=None):
     # The target repo's root is docs/'s parent — whether --run was pointed at
     # the repo root or at docs/ itself. CONFIG preflight may extend `protected`;
     # an optional audit-profile.yaml extends the denylists (M-1).
-    check_config_preflight(docs.parent, violations, protected)
-    gui_tools, secret_patterns = load_profile(docs.parent, violations)
+    gui_tools, secret_patterns, profile_cfg = load_profile(docs.parent, violations)
+    check_config_preflight(docs.parent, violations, protected, profile_cfg)
     backlog = docs / "BACKLOG.md"
     handoff = docs / "HANDOFF.md"
     if not backlog.exists():
@@ -652,10 +676,11 @@ def build_report(run_dir: Path, protected, violations):
     audit = docs.parent / "AUDIT.md"
     protocol_version = None
     protected = list(protected)
+    _, _, _pcfg = load_profile(docs.parent, [])
     if audit.exists():
         m = re.search(r"v\d+\.\d+\.\d+", audit.read_text(encoding="utf-8").splitlines()[0])
         protocol_version = m.group(0) if m else None
-        check_config_preflight(docs.parent, [], protected)  # mirror the auto-load; violations already counted
+    check_config_preflight(docs.parent, [], protected, _pcfg)  # mirror the auto-load; violations already counted
     report = {
         "schema": "code-audit-framework/report@1",
         "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),

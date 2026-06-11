@@ -53,6 +53,13 @@ Point `--run` at the target repo root (or its `docs/`): if the target's
 `AUDIT.md` is found, its CONFIG is preflighted and `PROTECTED_AREAS` is loaded
 automatically; `--protected` extends it.
 
+**Runner vs copy mode.** A target needs either an `audit-profile.yaml` with a
+`config:` section (runner mode — the protocol stays here, launch via
+`./core/evals/run-audit.sh <target> [agent cmd]`) or a full `AUDIT.md` copy
+(copy mode — pinned + self-contained; wins precedence when both exist). The
+preflight, placeholder/enum checks and PROTECTED_AREAS auto-load behave
+identically for both sources (B17/B18/G08 vs B26/G11).
+
 **Waivers.** A target repo may carry `docs/AUDIT-WAIVERS.yaml` — audit-trailed,
 *expiring* suppressions (`code` + optional `file`/`match` + `reason` +
 `approved_by` + mandatory ISO `expires`). A valid waiver suppresses the matched

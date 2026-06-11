@@ -50,7 +50,8 @@
       "fixtures_exercising": [
         "B09-protected-area-touched",
         "B18-config-autoprotect",
-        "G03-protected-prose-precision"
+        "G03-protected-prose-precision",
+        "B26-runner-config-autoprotect"
       ],
       "coverage_note": "Validator checks DONE task rows against protected areas (fixture-declared, --protected, or auto-loaded from the target AUDIT.md's CONFIG — B18). Scoped to DONE rows so narrative/OPEN-row mentions don't over-fire (G03); a DONE row whose prose merely NAMES a protected path still trips — that residual false-positive is BLINDSPOTS BS-05, accepted. Behavioral preservation itself is NOT machine-checkable here — enforce with tests/hooks in the target repo."
     },
@@ -153,9 +154,11 @@
       "fixtures_exercising": [
         "B17-config-placeholder",
         "B18-config-autoprotect",
-        "G08-config-realworld"
+        "G08-config-realworld",
+        "B26-runner-config-autoprotect",
+        "G11-runner-config-valid"
       ],
-      "coverage_note": "Runs only when the target repo's AUDIT.md sits next to docs/ (true for --run on a real target; fixtures opt in by shipping an AUDIT.md). Placeholder = any <...> remnant; enums checked for MODE / DEPTH / BENCHMARK_MODE / SEVERITY_FLOOR. PROTECTED_AREAS auto-loads into the R3 tripwire (B18), closing the --protected double-entry gap. The protocol-side STOP lives in Phase 0 (v1.2.0); the validator side is this mechanical check. Placeholder = whole-value <...> wrap or canonical template stems; comments strip at >=2 spaces before '#'; enums compared on the first token (F-4 precision: G08 keeps generics, redirection and 'ticket #4211' valid)."
+      "coverage_note": "Runs only when the target repo's AUDIT.md sits next to docs/ (true for --run on a real target; fixtures opt in by shipping an AUDIT.md). Placeholder = any <...> remnant; enums checked for MODE / DEPTH / BENCHMARK_MODE / SEVERITY_FLOOR. PROTECTED_AREAS auto-loads into the R3 tripwire (B18), closing the --protected double-entry gap. The protocol-side STOP lives in Phase 0 (v1.2.0); the validator side is this mechanical check. Placeholder = whole-value <...> wrap or canonical template stems; comments strip at >=2 spaces before '#'; enums compared on the first token (F-4 precision: G08 keeps generics, redirection and 'ticket #4211' valid). Runner mode: when the target has no AUDIT.md copy, the same preflight + auto-load run against audit-profile.yaml's config: section (B26 trap, G11 precision) — the protocol stays single-source in this repo; an AUDIT.md copy wins precedence when both exist."
     },
     {
       "rule_id": "P5",

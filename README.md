@@ -16,7 +16,7 @@ weakens a rule.
 | Protocol | [`AUDIT.md`](./core/AUDIT.md) — current release **v1.3.0** |
 | History | [`CHANGELOG.md`](./core/CHANGELOG.md) · immutable copies in [`core/improve/versions/`](./core/improve/versions/) |
 | Self-improvement | [`core/improve/CRITIC.md`](./core/improve/CRITIC.md) — one evidenced change per cycle |
-| Regression gate | [`core/evals/`](./core/evals/) — **35 fixtures, 35/35 green** at v1.3.0, stdlib-only Python; enforced in CI on every push |
+| Regression gate | [`core/evals/`](./core/evals/) — **37 fixtures, 37/37 green** at v1.3.0, stdlib-only Python; enforced in CI on every push |
 | For agents | [`AGENTS.md`](./AGENTS.md) — machine-facing operating rules for this repo |
 | License | [Apache-2.0](./LICENSE) · [`CONTRIBUTING.md`](./docs/CONTRIBUTING.md) · [`SECURITY.md`](./docs/SECURITY.md) |
 
@@ -44,17 +44,45 @@ critical rules come first on purpose.
 
 ---
 
+## Two ways to attach the auditor to a target
+
+| | **Runner mode** (recommended default) | **Copy mode** |
+|---|---|---|
+| Target carries | one small `audit-profile.yaml` (CONFIG + optional stack denylists) | a full `AUDIT.md` copy with CONFIG filled in |
+| Protocol source | single-source in THIS repo — every run uses the current release, zero per-target drift | the copy itself — explicitly pinned, self-contained |
+| Launch | `./core/evals/run-audit.sh <target> claude -p` | kickoff prompt inside the target |
+| Use when | you operate audits from the framework (CyberSkill fleet, fine-tuning runs) | the client must reproduce runs without you; air-gapped; contractually pinned engagements |
+
+Precedence is mechanical: if a target has both, its `AUDIT.md` copy wins.
+Either way, artifacts echo `Protocol: vX.Y.Z`, so provenance survives.
+
+```yaml
+# audit-profile.yaml — the target's complete audit identity (runner mode)
+config:
+  TECH_STACK: Python 3.12 / FastAPI / Postgres
+  PROJECT_PURPOSE: Internal invoicing API for the finance team
+  MODE: gated
+  SEVERITY_FLOOR: High
+  PROTECTED_AREAS: src/billing/
+  RUN_COMMANDS: pytest -q; ruff check .
+  BENCHMARK_MODE: auto
+gui_tools: []          # optional stack packs extend the validator's denylists
+secret_patterns: []
+```
+
+---
+
 ## Quickstart for humans (manual mode)
 
-**1. Copy the protocol into your target repo:**
+**1. Attach the auditor** — runner mode: write `audit-profile.yaml` (above) in
+the target and skip to step 3. Copy mode:
 
 ```bash
 curl -O https://raw.githubusercontent.com/cyberskill-official/code-audit-framework/main/core/AUDIT.md
 # or just copy the AUDIT.md file into your repo root
 ```
 
-**2. Edit the CONFIG block at the top of `AUDIT.md`.** It is the only part you
-ever change per project:
+**2. (Copy mode only) Edit the CONFIG block at the top of `AUDIT.md`** — the only part that changes per project:
 
 ```text
 PROJECT_PATH:    ./
@@ -71,9 +99,12 @@ BENCHMARK_MODE:  auto
 COMPARATORS:     (blank)
 ```
 
-**3. Paste the whole file into your agent** (or point the agent at it):
+**3. Launch.** Copy mode — tell your agent: *"Read AUDIT.md and execute it. Begin at PHASE 0."* Runner mode — from this repo:
 
-> "Read AUDIT.md and execute it. Begin at PHASE 0."
+```bash
+./core/evals/run-audit.sh /path/to/target              # prints the kickoff prompt
+./core/evals/run-audit.sh /path/to/target claude -p    # launches it
+```
 
 **4. What happens next (gated mode — the default):**
 
@@ -231,7 +262,7 @@ regression-tested, and changed only with evidence.
    core/improve/CRITIC.md         ──  ONE minimal change; PATCH/MINOR/MAJOR
                   │
                   ▼
-   core/evals/validate.py --all   ──  35 fixtures must stay green
+   core/evals/validate.py --all   ──  37 fixtures must stay green
                   │
                   ▼
    CHANGELOG.md + core/improve/versions/AUDIT-vX.Y.Z.md  (immutable release)
@@ -278,7 +309,7 @@ Full evidence trail: [`CHANGELOG.md`](./core/CHANGELOG.md),
 ## The regression harness
 
 ```bash
-python3 core/evals/validate.py --all      # 35 fixtures: G* must pass, B* must trip
+python3 core/evals/validate.py --all      # 37 fixtures: G* must pass, B* must trip
 ./core/evals/run-evals.sh --record        # run + pin baseline.json to AUDIT.md's sha256
 python3 core/evals/validate.py --run DIR  # validate any real run's docs/ output
 python3 core/evals/validate.py --run DIR --report json   # structured findings export (or: sarif)
@@ -322,7 +353,7 @@ core/                      ← the engine (CyberOS-absorbable as one unit)
     versions/ · retros/        immutable releases · scored history
   evals/                     the regression gate — map: evals/README.md
     validate.py                CLI shim → code_audit_validator.py (stdlib only)
-    fixtures/                  35 fixtures: G* precision runs + B* fault-injection traps
+    fixtures/                  37 fixtures: G* precision runs + B* fault-injection traps
     rules.json · baseline.json registry · last green matrix (sha256-pinned)
     run-evals.sh · scripts/    runner · docs-sync checker, retro aggregator
     TESTING-PROTOCOL.md        field-run accuracy tiers, metrics, calibration

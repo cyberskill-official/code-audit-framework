@@ -1,9 +1,9 @@
 {
   "audit_md_version": "v1.3.0",
   "audit_md_sha256": "f993d386fe0068bc583823f3fb6998ec3d79d190f99f65652561508fc53af28e",
-  "recorded_at": "2026-06-11T10:59:52+00:00",
-  "fixtures": 35,
-  "passed": 35,
+  "recorded_at": "2026-06-11T16:15:33+00:00",
+  "fixtures": 37,
+  "passed": 37,
   "all_ok": true,
   "matrix": {
     "B01-fabricated-metric": {
@@ -186,6 +186,13 @@
         "R8-SECRET"
       ]
     },
+    "B26-runner-config-autoprotect": {
+      "expect": "fail",
+      "ok": true,
+      "codes": [
+        "R3-PROTECTED"
+      ]
+    },
     "G01-clean-run": {
       "expect": "pass",
       "ok": true,
@@ -232,6 +239,11 @@
       "codes": []
     },
     "G10-legacy-version-artifact": {
+      "expect": "pass",
+      "ok": true,
+      "codes": []
+    },
+    "G11-runner-config-valid": {
       "expect": "pass",
       "ok": true,
       "codes": []
