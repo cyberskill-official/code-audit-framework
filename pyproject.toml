@@ -21,7 +21,7 @@ build-backend = "setuptools.build_meta"
 name = "code-audit-validator"
 version = "1.3.0"
 description = "Deterministic conformance checker for AUDIT.md agent-audit outputs — CyberSkill code-audit-framework"
-readme = { file = "evals/README.md", content-type = "text/markdown" }
+readme = { file = "core/evals/README.md", content-type = "text/markdown" }
 license = { file = "LICENSE" }
 requires-python = ">=3.9"
 authors = [{ name = "CyberSkill", email = "info@cyberskill.world" }]
@@ -35,15 +35,15 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/cyberskill-official/code-audit-framework"
-Changelog = "https://github.com/cyberskill-official/code-audit-framework/blob/main/CHANGELOG.md"
+Changelog = "https://github.com/cyberskill-official/code-audit-framework/blob/main/core/CHANGELOG.md"
 
 [project.scripts]
 code-audit-validate = "code_audit_validator:main"
 
 [tool.setuptools]
 # Single module, properly namespaced — the wheel must NOT claim the generic
-# top-level name `validate` (evals/validate.py is a repo-only CLI shim).
+# top-level name `validate` (core/evals/validate.py is a repo-only CLI shim).
 py-modules = ["code_audit_validator"]
 
 [tool.setuptools.package-dir]
-"" = "evals"
+"" = "core/evals"

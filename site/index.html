@@ -9,8 +9,8 @@
 <meta property="og:description" content="Evidence or nothing. Honest targets only. A protocol that improves itself — every change evidenced, versioned, and regression-gated." />
 <meta property="og:type" content="website" />
 
-<link rel="icon" type="image/svg+xml" href="assets/cyberskill-logo.svg">
-<link rel="apple-touch-icon" href="assets/cyberskill-logo.svg">
+<link rel="icon" type="image/svg+xml" href="site/assets/cyberskill-logo.svg">
+<link rel="apple-touch-icon" href="site/assets/cyberskill-logo.svg">
 <meta name="theme-color" content="#45210E">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -207,7 +207,7 @@ footer a:hover{text-decoration:underline}
 <nav aria-label="Primary">
   <div class="wrap nav-in">
     <a class="brand" href="#top" aria-label="AUDIT.md by CyberSkill — home">
-      <img src="assets/cyberskill-logo.svg" alt="" width="26" height="32"/>
+      <img src="site/assets/cyberskill-logo.svg" alt="" width="26" height="32"/>
       <span><b class="mono">AUDIT.md</b><span class="by">by CyberSkill</span></span>
     </a>
     <ul class="nav-links">
@@ -357,13 +357,13 @@ L2-T1 <span class="tk-r">High</span> Testing — parser failure paths uncovered
     </div>
     <div class="looprow">
       <div class="card glass-std">
-        <h3 style="margin-bottom:14px">One improvement cycle <span class="mono" style="font-size:12px;color:#8a6a4e">(improve/CRITIC.md)</span></h3>
+        <h3 style="margin-bottom:14px">One improvement cycle <span class="mono" style="font-size:12px;color:#8a6a4e">(core/improve/CRITIC.md)</span></h3>
         <ol class="loop-steps">
           <li>Gather evidence — protocol, changelog, failure log, last retros, <span class="mono">evals --all</span>.</li>
           <li>Critique, severity-weighted — find where wording lets an agent satisfy the letter but violate the intent. Zero findings is a valid outcome.</li>
           <li>Propose ONE minimal change — and pay for any added rule by trimming elsewhere.</li>
           <li>Gate it — add/extend a trap fixture, run all evals, release only on green.</li>
-          <li>Log it — changelog entry, immutable copy in <span class="mono">improve/versions/</span>, retrospective.</li>
+          <li>Log it — changelog entry, immutable copy in <span class="mono">core/improve/versions/</span>, retrospective.</li>
           <li>Stop on diminishing returns — two consecutive zero-High cycles end the campaign.</li>
         </ol>
       </div>
@@ -378,14 +378,14 @@ L2-T1 <span class="tk-r">High</span> Testing — parser failure paths uncovered
             <tr><td class="mono">4–5</td><td>Zero findings ≥ High, twice → campaign stopped by its own rule</td><td class="ok">15/15</td></tr>
           </tbody>
         </table>
-        <p style="font-size:12.5px;color:#8a6a4e;margin-top:12px">Every row has a full evidence trail in <span class="mono">CHANGELOG.md</span>, <span class="mono">improve/FAILURE_LOG.md</span>, and <span class="mono">improve/retros/</span>. Campaign 2 (post-1.0.0 ownership review): one cycle — <span class="mono">v1.1.0</span> closed a demonstrated gated-mode evasion found by the blind-spot audit (<span class="mono">improve/BLINDSPOTS.md</span>), evals 16/16. Campaign 3 (production-readiness pass): template-conformance meta-tripwire, CONFIG preflight, precision fixture pack and CI gate; one cycle — <span class="mono">v1.2.0</span> stops runs on placeholder or out-of-set CONFIG instead of improvising it, evals 24/24.</p>
+        <p style="font-size:12.5px;color:#8a6a4e;margin-top:12px">Every row has a full evidence trail in <span class="mono">CHANGELOG.md</span>, <span class="mono">core/improve/FAILURE_LOG.md</span>, and <span class="mono">core/improve/retros/</span>. Campaign 2 (post-1.0.0 ownership review): one cycle — <span class="mono">v1.1.0</span> closed a demonstrated gated-mode evasion found by the blind-spot audit (<span class="mono">core/improve/BLINDSPOTS.md</span>), evals 16/16. Campaign 3 (production-readiness pass): template-conformance meta-tripwire, CONFIG preflight, precision fixture pack and CI gate; one cycle — <span class="mono">v1.2.0</span> stops runs on placeholder or out-of-set CONFIG instead of improvising it, evals 24/24.</p>
       </div>
     </div>
 
     <div style="margin-top:var(--sp-6)" class="card glass-heavy">
       <h3>The regression gate, in one command</h3>
       <p style="margin:8px 0 14px;font-size:14px;color:#5b3a22">Twelve fault-injection traps plant exactly one violation each — a fabricated metric, an uncited "Palantir-grade" target, a leaked AWS key, an unapproved execution. The validator must catch each planted fault and nothing else. A trap that stops tripping means a rule has died — and the edit is blocked.</p>
-      <div class="codeblock" role="img" aria-label="Eval harness output showing 35 of 35 fixtures green">$ python3 evals/validate.py --all
+      <div class="codeblock" role="img" aria-label="Eval harness output showing 35 of 35 fixtures green">$ python3 core/evals/validate.py --all
 <span class="g">[PASS]</span> B01-fabricated-metric      <span class="c">expect=fail → trapped as expected</span>
 <span class="g">[PASS]</span> B07-secret-leak            <span class="c">expect=fail → trapped as expected</span>
 <span class="g">[PASS]</span> B12-gated-unapproved-exec  <span class="c">expect=fail → trapped as expected</span>
@@ -442,7 +442,7 @@ L2-T1 <span class="tk-r">High</span> Testing — parser failure paths uncovered
   <div class="wrap">
     <div class="foot">
       <div class="foot-brand">
-        <img src="assets/cyberskill-logo.svg" alt="CyberSkill logo" width="30" height="37"/>
+        <img src="site/assets/cyberskill-logo.svg" alt="CyberSkill logo" width="30" height="37"/>
         <div>
           <b style="font-size:15px">CyberSkill</b>
           <p style="margin-top:6px;max-width:38ch">Software solutions consultancy and development. Founded 2020, Ho Chi Minh City — serving clients globally.</p>
@@ -452,8 +452,8 @@ L2-T1 <span class="tk-r">High</span> Testing — parser failure paths uncovered
       <div>
         <h4>Project</h4>
         <p><a href="https://github.com/cyberskill-official/code-audit-framework" rel="noopener">Source &amp; README</a></p>
-        <p><a href="https://github.com/cyberskill-official/code-audit-framework/blob/main/CHANGELOG.md" rel="noopener">Changelog (v1.3.0)</a></p>
-        <p><a href="https://github.com/cyberskill-official/code-audit-framework/blob/main/improve/CRITIC.md" rel="noopener">Self-improvement cycle</a></p>
+        <p><a href="https://github.com/cyberskill-official/code-audit-framework/blob/main/core/CHANGELOG.md" rel="noopener">Changelog (v1.3.0)</a></p>
+        <p><a href="https://github.com/cyberskill-official/code-audit-framework/blob/main/core/improve/CRITIC.md" rel="noopener">Self-improvement cycle</a></p>
         <p><a href="https://buymeacoffee.com/zintaen" rel="noopener">Buy a fine-tune cycle ☕</a></p>
       </div>
       <div>

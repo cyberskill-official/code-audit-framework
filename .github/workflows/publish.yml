@@ -30,12 +30,12 @@ jobs:
 
       - name: Gate — suite + docs sync must be green before anything ships
         run: |
-          python3 evals/validate.py --all
-          python3 evals/scripts/check-docs-sync.py
+          python3 core/evals/validate.py --all
+          python3 core/evals/scripts/check-docs-sync.py
 
       - name: Gate — release tag must match the protocol version
         run: |
-          V="$(head -1 AUDIT.md | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')"
+          V="$(head -1 core/AUDIT.md | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')"
           [ "${{ github.event.release.tag_name }}" = "$V" ] \
             || { echo "::error::release tag ${{ github.event.release.tag_name }} != protocol $V"; exit 1; }
 

@@ -6,7 +6,7 @@ a version surface like README/index.html — but one the docs-sync checker
 cannot read. The deal (CONTRIBUTING release ritual): regenerate the card as
 part of every release, with this one command:
 
-    python3 assets/make-social-card.py        # needs: pillow, cairosvg
+    python3 site/assets/make-social-card.py   # needs: pillow, cairosvg
 
 Reads version from AUDIT.md's title and the fixture count from disk — never
 hand-edit the numbers. Colors are sampled from the brand SVG's own fills
@@ -18,7 +18,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]   # repo root
 
 try:
     import cairosvg
@@ -26,15 +26,15 @@ try:
 except ImportError as e:
     sys.exit(f"missing dependency: {e.name} — pip install pillow cairosvg")
 
-VER = re.search(r"v\d+\.\d+\.\d+", (ROOT / "AUDIT.md").read_text(encoding="utf-8").splitlines()[0]).group(0)
-N = sum(1 for d in (ROOT / "evals" / "fixtures").iterdir() if d.is_dir())
+VER = re.search(r"v\d+\.\d+\.\d+", (ROOT / "core" / "AUDIT.md").read_text(encoding="utf-8").splitlines()[0]).group(0)
+N = sum(1 for d in (ROOT / "core" / "evals" / "fixtures").iterdir() if d.is_dir())
 
 W, H = 2560, 1280
 SAFE = 110
 BROWN, GOLD = (69, 33, 14), (242, 184, 23)        # sampled from cyberskill-logo.svg fills
 CREAM, CREAM_DIM, MUTED = (245, 233, 216), (212, 190, 163), (172, 142, 107)
 
-cairosvg.svg2png(url=str(ROOT / "assets" / "cyberskill-logo.svg"),
+cairosvg.svg2png(url=str(ROOT / "site" / "assets" / "cyberskill-logo.svg"),
                  write_to="/tmp/_cs_logo.png", output_width=760, output_height=760)
 
 img = Image.new("RGB", (W, H), BROWN)             # flat: the logo's own bg blends seamlessly
@@ -79,6 +79,6 @@ fy = H - SAFE - 52
 d.line([(tx, fy - 38), (W - SAFE, fy - 38)], fill=(120, 85, 45), width=3)
 d.text((tx, fy), foot, font=ff, fill=MUTED)
 
-out = ROOT / "assets" / "social-preview.png"
+out = ROOT / "site" / "assets" / "social-preview.png"
 img.save(out)
 print(f"{out.relative_to(ROOT)} regenerated — {VER}, {N} fixtures")

@@ -22,46 +22,46 @@ jobs:
           python-version: "3.12"
 
       - name: Full fixture suite (validate.py --all)
-        run: python3 evals/validate.py --all
+        run: python3 core/evals/validate.py --all
 
       - name: Version sync — AUDIT.md = package.json = baseline.json (BLINDSPOTS BS-11)
         run: |
           set -e
-          AUD="$(head -1 AUDIT.md | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')"
+          AUD="$(head -1 core/AUDIT.md | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')"
           PKG="v$(python3 -c "import json;print(json.load(open('package.json'))['version'])")"
-          BASE="$(python3 -c "import json;print(json.load(open('evals/baseline.json'))['audit_md_version'])")"
+          BASE="$(python3 -c "import json;print(json.load(open('core/evals/baseline.json'))['audit_md_version'])")"
           echo "AUDIT.md=$AUD package.json=$PKG baseline.json=$BASE"
           if [ "$AUD" != "$PKG" ] || [ "$AUD" != "$BASE" ]; then
-            echo "::error::VERSION DRIFT — align AUDIT.md title, package.json and baseline.json (./evals/run-evals.sh --record)"
+            echo "::error::VERSION DRIFT — align AUDIT.md title, package.json and baseline.json (./core/evals/run-evals.sh --record)"
             exit 1
           fi
 
       - name: Baseline integrity — AUDIT.md unchanged since last --record
         run: |
           set -e
-          SHA="$(sha256sum AUDIT.md | cut -d' ' -f1)"
-          BSHA="$(python3 -c "import json;print(json.load(open('evals/baseline.json'))['audit_md_sha256'])")"
+          SHA="$(sha256sum core/AUDIT.md | cut -d' ' -f1)"
+          BSHA="$(python3 -c "import json;print(json.load(open('core/evals/baseline.json'))['audit_md_sha256'])")"
           if [ "$SHA" != "$BSHA" ]; then
-            echo "::error::AUDIT.md was edited without re-recording the baseline — run ./evals/run-evals.sh --record in the same change"
+            echo "::error::AUDIT.md was edited without re-recording the baseline — run ./core/evals/run-evals.sh --record in the same change"
             exit 1
           fi
 
       - name: Release snapshot — current protocol matches its immutable copy
         run: |
           set -e
-          V="$(head -1 AUDIT.md | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')"
-          cmp AUDIT.md "improve/versions/AUDIT-$V.md" \
-            || { echo "::error::AUDIT.md ($V) differs from improve/versions/AUDIT-$V.md — every release must be snapshotted"; exit 1; }
+          V="$(head -1 core/AUDIT.md | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')"
+          cmp core/AUDIT.md "core/improve/versions/AUDIT-$V.md" \
+            || { echo "::error::core/AUDIT.md ($V) differs from core/improve/versions/AUDIT-$V.md — every release must be snapshotted"; exit 1; }
 
       - name: Docs sync — every version / fixture-count surface agrees (BS-11)
-        run: python3 evals/scripts/check-docs-sync.py
+        run: python3 core/evals/scripts/check-docs-sync.py
 
       - name: Report contract — live report validates against schemas/report.v1.json
         run: |
           python3 -m pip install --quiet jsonschema
-          python3 evals/validate.py --run evals/fixtures/G01-clean-run --report json > /tmp/r.json
+          python3 core/evals/validate.py --run core/evals/fixtures/G01-clean-run --report json > /tmp/r.json
           python3 - <<'PY'
           import json, jsonschema
-          jsonschema.validate(json.load(open('/tmp/r.json')), json.load(open('schemas/report.v1.json')))
+          jsonschema.validate(json.load(open('/tmp/r.json')), json.load(open('core/schemas/report.v1.json')))
           print("report@1 contract holds")
           PY

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """code_audit_validator — deterministic conformance checker for AUDIT.md outputs.
 
-(Repo-side CLI: `python3 evals/validate.py`, a thin shim over this module —
+(Repo-side CLI: `python3 core/evals/validate.py`, a thin shim over this module —
 kept so the PyPI install claims `code_audit_validator`, not the generic
 top-level name `validate`.)
 
@@ -45,15 +45,15 @@ PROTECTED_AREAS is loaded from it automatically — `--protected` then extends
 rather than replaces it (closes the double-entry gap, review item G-F).
 
 Usage:
-  python3 evals/validate.py --run <dir-containing-docs>  [--protected p1,p2] [--fail-on High]
-  python3 evals/validate.py --run <dir> --report json    # structured findings export
-  python3 evals/validate.py --run <dir> --report sarif   # GitHub code-scanning format
-  python3 evals/validate.py --run <dir> --emit-feedback  # feedback@1 record skeleton
-  python3 evals/validate.py --batch targets.yaml         # fleet runner -> reports + portfolio.json
-  python3 evals/validate.py --aggregate r1.json r2.json  # portfolio roll-up of report JSONs
-  python3 evals/validate.py --compare prev.json curr.json  # run-over-run regressions
-  python3 evals/validate.py --all          # run every fixture, compare to expectations
-  python3 evals/validate.py --all --json   # machine-readable results
+  python3 core/evals/validate.py --run <dir-containing-docs>  [--protected p1,p2] [--fail-on High]
+  python3 core/evals/validate.py --run <dir> --report json    # structured findings export
+  python3 core/evals/validate.py --run <dir> --report sarif   # GitHub code-scanning format
+  python3 core/evals/validate.py --run <dir> --emit-feedback  # feedback@1 record skeleton
+  python3 core/evals/validate.py --batch targets.yaml         # fleet runner -> reports + portfolio.json
+  python3 core/evals/validate.py --aggregate r1.json r2.json  # portfolio roll-up of report JSONs
+  python3 core/evals/validate.py --compare prev.json curr.json  # run-over-run regressions
+  python3 core/evals/validate.py --all          # run every fixture, compare to expectations
+  python3 core/evals/validate.py --all --json   # machine-readable results
 
 A target may ship `audit-profile.yaml` at its root to EXTEND the GUI-tool and
 secret-pattern denylists per stack (gui_tools list; secret_patterns name+regex

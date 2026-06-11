@@ -13,12 +13,12 @@ weakens a rule.
 
 | | |
 |---|---|
-| Protocol | [`AUDIT.md`](./AUDIT.md) — current release **v1.3.0** |
-| History | [`CHANGELOG.md`](./CHANGELOG.md) · immutable copies in [`improve/versions/`](./improve/versions/) |
-| Self-improvement | [`improve/CRITIC.md`](./improve/CRITIC.md) — one evidenced change per cycle |
-| Regression gate | [`evals/`](./evals/) — **35 fixtures, 35/35 green** at v1.3.0, stdlib-only Python; enforced in CI on every push |
+| Protocol | [`AUDIT.md`](./core/AUDIT.md) — current release **v1.3.0** |
+| History | [`CHANGELOG.md`](./core/CHANGELOG.md) · immutable copies in [`core/improve/versions/`](./core/improve/versions/) |
+| Self-improvement | [`core/improve/CRITIC.md`](./core/improve/CRITIC.md) — one evidenced change per cycle |
+| Regression gate | [`core/evals/`](./core/evals/) — **35 fixtures, 35/35 green** at v1.3.0, stdlib-only Python; enforced in CI on every push |
 | For agents | [`AGENTS.md`](./AGENTS.md) — machine-facing operating rules for this repo |
-| License | [Apache-2.0](./LICENSE) · [`CONTRIBUTING.md`](./CONTRIBUTING.md) · [`SECURITY.md`](./SECURITY.md) |
+| License | [Apache-2.0](./LICENSE) · [`CONTRIBUTING.md`](./docs/CONTRIBUTING.md) · [`SECURITY.md`](./docs/SECURITY.md) |
 
 ---
 
@@ -49,7 +49,7 @@ critical rules come first on purpose.
 **1. Copy the protocol into your target repo:**
 
 ```bash
-curl -O https://raw.githubusercontent.com/cyberskill-official/code-audit-framework/main/AUDIT.md
+curl -O https://raw.githubusercontent.com/cyberskill-official/code-audit-framework/main/core/AUDIT.md
 # or just copy the AUDIT.md file into your repo root
 ```
 
@@ -93,7 +93,7 @@ it stopped. Never restarts finished work.
 **6. Optionally validate the run's honesty mechanically:**
 
 ```bash
-python3 evals/validate.py --run /path/to/target-repo   # checks its docs/ output
+python3 core/evals/validate.py --run /path/to/target-repo   # checks its docs/ output
 ```
 
 ---
@@ -111,7 +111,7 @@ else is identical to manual mode):
 
 ```bash
 cd /path/to/target-repo
-curl -O https://raw.githubusercontent.com/cyberskill-official/code-audit-framework/main/AUDIT.md
+curl -O https://raw.githubusercontent.com/cyberskill-official/code-audit-framework/main/core/AUDIT.md
 $EDITOR AUDIT.md     # fill CONFIG; set MODE: autonomous
 ```
 
@@ -141,8 +141,8 @@ machine-checked — fabricated measurements, uncited targets, gate-skips and
 leaked secrets are detectable from the files alone:
 
 ```bash
-python3 evals/validate.py --run /path/to/target-repo              # exit 1 on violations
-python3 evals/validate.py --run /path/to/target-repo --report json  # findings for dashboards
+python3 core/evals/validate.py --run /path/to/target-repo              # exit 1 on violations
+python3 core/evals/validate.py --run /path/to/target-repo --report json  # findings for dashboards
 ```
 
 In CI, run step 2 on a schedule and make step 3 the job's pass/fail — or use
@@ -180,21 +180,21 @@ denylists via an `audit-profile.yaml` at the target root. `--batch targets.yaml`
 validates a whole portfolio and writes per-run reports + `portfolio.json`;
 `--compare` diffs two runs; `--fail-on High` applies a severity policy to the
 exit code (every violation is still reported); `--emit-feedback` generates the
-per-run calibration record ([`evals/TESTING-PROTOCOL.md`](./evals/TESTING-PROTOCOL.md)).
+per-run calibration record ([`core/evals/TESTING-PROTOCOL.md`](./core/evals/TESTING-PROTOCOL.md)).
 And the validator is **offline by design**: stdlib-only, no network calls, no
 telemetry — nothing about the audited codebase leaves the machine, which makes
-it safe for air-gapped and regulated environments (see [`COMPLIANCE.md`](./COMPLIANCE.md)).
+it safe for air-gapped and regulated environments (see [`COMPLIANCE.md`](./docs/COMPLIANCE.md)).
 
 **Improving the protocol itself, scripted the same way** (Job B in
 [`AGENTS.md`](./AGENTS.md) — the file agents are pointed at once they're
 running in *this* repo):
 
 ```bash
-claude -p "Run one improvement cycle per improve/CRITIC.md."
+claude -p "Run one improvement cycle per core/improve/CRITIC.md."
 ```
 
-Hard invariants either job is held to: never edit `improve/versions/*`; never
-weaken a fixture; `python3 evals/validate.py --all` green before any protocol
+Hard invariants either job is held to: never edit `core/improve/versions/*`; never
+weaken a fixture; `python3 core/evals/validate.py --all` green before any protocol
 change is done.
 
 ---
@@ -220,21 +220,21 @@ regression-tested, and changed only with evidence.
         run AUDIT.md on a project
                   │
                   ▼
-   improve/RETROSPECTIVE.md  ──  10 questions, /20 score, ~10 minutes
+   core/improve/RETROSPECTIVE.md  ──  10 questions, /20 score, ~10 minutes
                   │
    score < 16 or repeat failure?
                   │ yes                          no → stop tuning (stability
                   ▼                                   is the goal)
-   improve/FAILURE_LOG.md    ──  log it; promote only on recurrence
+   core/improve/FAILURE_LOG.md    ──  log it; promote only on recurrence
                   │                              (Rule of Three)
                   ▼
-   improve/CRITIC.md         ──  ONE minimal change; PATCH/MINOR/MAJOR
+   core/improve/CRITIC.md         ──  ONE minimal change; PATCH/MINOR/MAJOR
                   │
                   ▼
-   evals/validate.py --all   ──  35 fixtures must stay green
+   core/evals/validate.py --all   ──  35 fixtures must stay green
                   │
                   ▼
-   CHANGELOG.md + improve/versions/AUDIT-vX.Y.Z.md  (immutable release)
+   CHANGELOG.md + core/improve/versions/AUDIT-vX.Y.Z.md  (immutable release)
 ```
 
 There is **no lifetime cap on cycles** — only per-campaign stop rules
@@ -252,7 +252,7 @@ already been run on itself; the pre-release hardening campaign (2026-06-10,
 
 Campaign 2 (2026-06-10, after the move to CyberSkill ownership) opened with a
 full blind-spot review — the seven declared harness blind spots re-verified and
-four new ones registered ([`improve/BLINDSPOTS.md`](./improve/BLINDSPOTS.md)) —
+four new ones registered ([`core/improve/BLINDSPOTS.md`](./core/improve/BLINDSPOTS.md)) —
 and ran one cycle: **v1.1.0** echoes `Mode:` in every backlog, closing a
 demonstrated gated-mode evasion (BS-08). Evals: 16/16. Stop condition (c):
 fixed cycle count requested by the maintainer.
@@ -268,20 +268,20 @@ protocol change: **v1.2.0** — Phase 0 now STOPs on placeholder or out-of-set
 CONFIG instead of letting the agent improvise it. Evals: 24/24. Stop condition
 (b): every failure-log row promoted or explicitly deferred.
 
-Full evidence trail: [`CHANGELOG.md`](./CHANGELOG.md),
-[`improve/FAILURE_LOG.md`](./improve/FAILURE_LOG.md),
-[`improve/BLINDSPOTS.md`](./improve/BLINDSPOTS.md),
-[`improve/retros/`](./improve/retros/).
+Full evidence trail: [`CHANGELOG.md`](./core/CHANGELOG.md),
+[`core/improve/FAILURE_LOG.md`](./core/improve/FAILURE_LOG.md),
+[`core/improve/BLINDSPOTS.md`](./core/improve/BLINDSPOTS.md),
+[`core/improve/retros/`](./core/improve/retros/).
 
 ---
 
 ## The regression harness
 
 ```bash
-python3 evals/validate.py --all      # 35 fixtures: G* must pass, B* must trip
-./evals/run-evals.sh --record        # run + pin baseline.json to AUDIT.md's sha256
-python3 evals/validate.py --run DIR  # validate any real run's docs/ output
-python3 evals/validate.py --run DIR --report json   # structured findings export (or: sarif)
+python3 core/evals/validate.py --all      # 35 fixtures: G* must pass, B* must trip
+./core/evals/run-evals.sh --record        # run + pin baseline.json to AUDIT.md's sha256
+python3 core/evals/validate.py --run DIR  # validate any real run's docs/ output
+python3 core/evals/validate.py --run DIR --report json   # structured findings export (or: sarif)
 ```
 
 Zero dependencies (Python stdlib). Each `B*` fixture is a **fault-injection
@@ -289,35 +289,72 @@ trap**: it plants exactly one violation (a fabricated metric, an uncited SOTA
 target, a leaked AWS key, an unapproved execution, …) and the validator must
 report exactly that violation. A trap that stops tripping means a rule has
 silently died — that is what blocks a bad prompt edit. Details:
-[`evals/README.md`](./evals/README.md). What the validator *cannot* see
+[`core/evals/README.md`](./core/evals/README.md). What the validator *cannot* see
 (judgment calls, live-agent behavior) is declared honestly in
-[`evals/rules.json`](./evals/rules.json) coverage notes.
+[`core/evals/rules.json`](./core/evals/rules.json) coverage notes.
 
 ---
 
-## Repo layout
+## Repo layout — divided by nature
+
+Three zones plus a thin root shell. `core/` is the engine and is designed to be
+absorbed wholesale into CyberSkill's CyberOS; `site/` is the community page;
+`docs/` is human documentation; the root holds only what external conventions
+pin there.
 
 ```
-AUDIT.md                 ← the product: the protocol (current release)
-README.md                ← you are here
-AGENTS.md                ← operating rules for AI agents working on this repo
-CHANGELOG.md             ← one change per version, every change evidenced
-index.html               ← visitor-facing product page (CyberSkill design system)
-assets/                  ← logo, analytics bundle
-improve/
-  CRITIC.md              ← the self-improvement cycle (meta-prompt)
-  RETROSPECTIVE.md       ← 10-question post-run rubric (/20)
-  FAILURE_LOG.md         ← failures → candidate edits → promotions
-  BLINDSPOTS.md          ← register of what the harness cannot see (+ status)
-  versions/              ← immutable released versions (v1.0.0 …)
-  retros/                ← filled retrospectives (pre-release cycles 1–5 included)
-evals/
-  validate.py            ← deterministic conformance checker (stdlib only)
-  fixtures/              ← G* compliant runs + B* fault-injection traps (16)
-  rules.json             ← rule → AUDIT.md anchor → fixtures (+ honest gaps)
-  baseline.json          ← last green matrix, pinned to AUDIT.md sha256
-  run-evals.sh           ← runner; --record refreshes the baseline
+/                          ← distribution + tooling shell (pinned by conventions)
+  README.md                  you are here — the front door
+  AGENTS.md                  agent operating rules (root: Cursor/Codex auto-read it here)
+  action.yml                 composite GitHub Action (root: resolution rules)
+  pyproject.toml             PyPI packaging for code-audit-validator
+  package.json               npm-script conveniences (evals, evals:record)
+  LICENSE · NOTICE           Apache-2.0
+
+core/                      ← the engine (CyberOS-absorbable as one unit)
+  AUDIT.md                   the product: the protocol (current release)
+  CHANGELOG.md               one change per version, every change evidenced
+  improve/                   the self-improvement loop — map: improve/README.md
+    CRITIC.md                  the cycle procedure (meta-prompt)
+    RETROSPECTIVE.md           10-question post-run rubric (/20)
+    FAILURE_LOG.md             failures → candidate edits → promotions (append-only)
+    BLINDSPOTS.md              register of what the harness cannot see (+ status)
+    versions/ · retros/        immutable releases · scored history
+  evals/                     the regression gate — map: evals/README.md
+    validate.py                CLI shim → code_audit_validator.py (stdlib only)
+    fixtures/                  35 fixtures: G* precision runs + B* fault-injection traps
+    rules.json · baseline.json registry · last green matrix (sha256-pinned)
+    run-evals.sh · scripts/    runner · docs-sync checker, retro aggregator
+    TESTING-PROTOCOL.md        field-run accuracy tiers, metrics, calibration
+  schemas/                   published contracts: report.v1, feedback.v1
+
+site/                      ← community page (Pages deploys ONLY this folder)
+  index.html · assets/       product page, logo, social card + its generator
+
+docs/                      ← human documents (GitHub surfaces these from docs/)
+  CONTRIBUTING.md · SECURITY.md · COMPLIANCE.md
+
+.github/workflows/         ← evals (CI gate) · publish (PyPI, OIDC) · pages
 ```
+
+**Where every document lives (the md map):**
+
+| You want… | Read |
+|---|---|
+| What this is, how to run it | `README.md` (here) |
+| The protocol itself | [`core/AUDIT.md`](./core/AUDIT.md) |
+| Rules for agents working on this repo | [`AGENTS.md`](./AGENTS.md) |
+| What changed and why, per release | [`core/CHANGELOG.md`](./core/CHANGELOG.md) |
+| How the self-improvement loop works | [`core/improve/README.md`](./core/improve/README.md) |
+| How the eval harness works / add a fixture | [`core/evals/README.md`](./core/evals/README.md) |
+| How field-run accuracy is evaluated | [`core/evals/TESTING-PROTOCOL.md`](./core/evals/TESTING-PROTOCOL.md) |
+| How to contribute / report a protocol failure | [`docs/CONTRIBUTING.md`](./docs/CONTRIBUTING.md) |
+| Security policy | [`docs/SECURITY.md`](./docs/SECURITY.md) |
+| Compliance / control mapping | [`docs/COMPLIANCE.md`](./docs/COMPLIANCE.md) |
+
+Note: when AUDIT.md is run **on this repo itself**, its output artifacts
+(`docs/BACKLOG.md`, `docs/HANDOFF.md`, `docs/AUDIT-WAIVERS.yaml`) are
+gitignored by name — the committed documentation in `docs/` is unaffected.
 
 ---
 
@@ -328,14 +365,14 @@ evals/
 3. **Files are memory.** Initializer + incremental sessions + artifacts for the next session — Anthropic, *Effective harnesses for long-running agents*.
 4. **Stops must be reachable.** Iteration caps as safety net, diminishing returns as signal; "done" defined per loop, never against an unreachable absolute.
 5. **Honest outcomes beat impressive ones.** "No significant findings" and "No external benchmark applicable" are first-class results. Quotas manufacture noise (specification gaming — Krakovna et al., 2020).
-6. **Prompt text is advisory; gates are deterministic.** ~80% adherence is the realistic ceiling for context-file guidance. Anything you cannot tolerate being skipped belongs in hooks/CI — here, that is `evals/validate.py`.
+6. **Prompt text is advisory; gates are deterministic.** ~80% adherence is the realistic ceiling for context-file guidance. Anything you cannot tolerate being skipped belongs in hooks/CI — here, that is `core/evals/validate.py`.
 
 ---
 
 ## Caveats
 
 - **Prompt compliance is probabilistic.** Even this protocol is advisory to the agent running it. The eval harness catches dishonest *artifacts*; it cannot force honest *behavior* mid-run. For non-negotiables, use deterministic hooks in your own CI.
-- **The validator is a tripwire, not a proof.** Denylists (GUI tools, secret patterns) are finite; substring matching can false-positive on prose. Known limits are documented in `evals/rules.json` and `improve/retros/2026-06-10-cycle-4.md`.
+- **The validator is a tripwire, not a proof.** Denylists (GUI tools, secret patterns) are finite; substring matching can false-positive on prose. Known limits are documented in `core/evals/rules.json` and `core/improve/retros/2026-06-10-cycle-4.md`.
 - **Harnesses go stale as models improve.** Re-examine the CORE RULES every few model generations; scaffolding that helps today may be dead weight tomorrow.
 - **Small evidence base.** The redesign is grounded in 4 documented production runs plus published research; its effectiveness is validated continuously through the retrospective system — that's what the loop is for.
 

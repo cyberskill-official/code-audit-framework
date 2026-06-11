@@ -20,7 +20,7 @@ if [[ "${1:-}" == "--record" && $STATUS -eq 0 ]]; then
   VERSION="$(head -1 "$ROOT/AUDIT.md" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || echo unknown)"
   # Version-drift guard (improve/BLINDSPOTS.md BS-11): refuse to pin a baseline
   # when the protocol's title version and package.json disagree.
-  PKG_VERSION="v$(python3 -c "import json;print(json.load(open('$ROOT/package.json'))['version'])" 2>/dev/null || echo unknown)"
+  PKG_VERSION="v$(python3 -c "import json;print(json.load(open('$ROOT/../package.json'))['version'])" 2>/dev/null || echo unknown)"
   if [[ "$VERSION" != "$PKG_VERSION" ]]; then
     echo "VERSION DRIFT: AUDIT.md title says $VERSION but package.json says $PKG_VERSION — align before recording." >&2
     rm -f "$TMP"

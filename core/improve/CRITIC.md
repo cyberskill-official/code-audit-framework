@@ -8,7 +8,7 @@ cycles may run over the project's lifetime; each individual cycle, however,
 must end at a defined stop point.
 
 Paste what follows into your agent from this repo's root, or just say:
-**"Run one improvement cycle per improve/CRITIC.md."**
+**"Run one improvement cycle per core/improve/CRITIC.md."**
 
 ---
 
@@ -23,9 +23,9 @@ highest-leverage instance, and prove you didn't break anything.
 ### Step 1 — Gather evidence (read, in order)
 1. `AUDIT.md` — the current protocol.
 2. `CHANGELOG.md` — what changed recently and why (do not repeat a reverted edit).
-3. `improve/FAILURE_LOG.md` — open failures and how often each recurred.
-4. `improve/retros/` — the 3 most recent retrospectives, if any.
-5. Eval status: run `python3 evals/validate.py --all` and read the summary.
+3. `core/improve/FAILURE_LOG.md` — open failures and how often each recurred.
+4. `core/improve/retros/` — the 3 most recent retrospectives, if any.
+5. Eval status: run `python3 core/evals/validate.py --all` and read the summary.
 
 ### Step 2 — Critique (severity-weighted, no quota)
 Identify up to 3 weaknesses where the protocol's wording permits
@@ -48,17 +48,17 @@ For the single highest-severity finding only:
 ### Step 4 — Apply, version, gate
 1. Apply the edit to `AUDIT.md`. Bump the version in its title line.
 2. If the eval harness can test the new/changed behavior, add or update a
-   fixture in `evals/fixtures/` and register it in `evals/rules.json` in the
+   fixture in `core/evals/fixtures/` and register it in `core/evals/rules.json` in the
    SAME cycle. A rule the harness cannot see will silently rot.
-3. Run `python3 evals/validate.py --all`. ALL fixtures must pass — any
+3. Run `python3 core/evals/validate.py --all`. ALL fixtures must pass — any
    previously-green fixture that breaks means revert or fix before release.
-4. Copy the released file to `improve/versions/AUDIT-v<x.y.z>.md` (immutable).
+4. Copy the released file to `core/improve/versions/AUDIT-v<x.y.z>.md` (immutable).
 5. Append a CHANGELOG.md entry: the change, the trigger (cite the failure-log
    row / retro item / eval gap), and the eval result.
 6. Update the failure-log row's "Promoted to version?" column if applicable.
 
 ### Step 5 — Retrospective
-Fill `improve/retros/<date>-cycle-<n>.md` from `improve/RETROSPECTIVE.md`
+Fill `core/improve/retros/<date>-cycle-<n>.md` from `core/improve/RETROSPECTIVE.md`
 (score the protocol-editing run itself: was the change minimal, evidenced,
 eval-gated, logged?).
 
@@ -73,7 +73,7 @@ always run later — the loop has no lifetime cap, only per-campaign stop rules.
 
 ### Hard rules for the critic itself
 - ONE protocol change per cycle. Batching edits destroys attribution.
-- Never edit files in `improve/versions/` (immutable history).
+- Never edit files in `core/improve/versions/` (immutable history).
 - Never weaken an eval fixture to make a change pass. If a fixture is wrong,
   fixing it IS the cycle's one change, with its own changelog entry.
 - Never delete a failure-log row; mark it promoted/deferred instead.

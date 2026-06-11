@@ -33,11 +33,11 @@ trail *mechanically checkable*, offline, with zero telemetry.
 
 | Mechanism | Control objective |
 |---|---|
-| One protocol change per version, each citing a trigger (`CHANGELOG.md`, `improve/FAILURE_LOG.md`) | Change management with documented rationale |
-| Immutable release snapshots (`improve/versions/`, CI-verified byte-exact) | Tamper-evidence for the governing document itself |
+| One protocol change per version, each citing a trigger (`CHANGELOG.md`, `core/improve/FAILURE_LOG.md`) | Change management with documented rationale |
+| Immutable release snapshots (`core/improve/versions/`, CI-verified byte-exact) | Tamper-evidence for the governing document itself |
 | Fault-injection regression suite (32 fixtures; traps must trip, precision fixtures must not) | Control effectiveness testing — every enforced rule is proven load-bearing |
 | CI release invariants (suite, version sync, baseline sha256, snapshot match, docs sync, report schema) | Segregation of duty between "changing the rules" and "shipping the rules" |
-| Blind-spot register (`improve/BLINDSPOTS.md`, statuses with evidence) | Honest control-limitation disclosure — what the tooling *cannot* see is documented, reviewed each campaign |
+| Blind-spot register (`core/improve/BLINDSPOTS.md`, statuses with evidence) | Honest control-limitation disclosure — what the tooling *cannot* see is documented, reviewed each campaign |
 | Offline-by-design validator (stdlib-only, no network, no telemetry) | Data residency / air-gap compatibility: nothing about the audited codebase leaves the machine |
 
 **Operating it in a regulated context:** pin a release tag per engagement,

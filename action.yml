@@ -35,8 +35,8 @@ runs:
           ARGS+=(--protected "${{ inputs.protected }}")
         fi
         if [ -n "${{ inputs.report }}" ]; then
-          python3 "${{ github.action_path }}/evals/validate.py" "${ARGS[@]}" --report "${{ inputs.report }}" \
+          python3 "${{ github.action_path }}/core/evals/validate.py" "${ARGS[@]}" --report "${{ inputs.report }}" \
             | tee "audit-report.${{ inputs.report }}"
         else
-          python3 "${{ github.action_path }}/evals/validate.py" "${ARGS[@]}"
+          python3 "${{ github.action_path }}/core/evals/validate.py" "${ARGS[@]}"
         fi

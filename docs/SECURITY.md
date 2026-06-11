@@ -3,8 +3,8 @@
 ## Supported versions
 
 Only the latest released version of the protocol (`AUDIT.md` on `main`) and its
-validator (`evals/validate.py`) are supported. Historical snapshots in
-`improve/versions/` are immutable records, not supported artifacts.
+validator (`core/evals/validate.py`) are supported. Historical snapshots in
+`core/improve/versions/` are immutable records, not supported artifacts.
 
 ## Reporting a vulnerability
 
@@ -14,13 +14,13 @@ acknowledge within 3 business days.
 
 In scope:
 
-- The validator (`evals/validate.py`) mis-parsing crafted run artifacts in a
+- The validator (`core/evals/validate.py`) mis-parsing crafted run artifacts in a
   way that hides planted violations (validator bypasses).
 - Secret-redaction gaps: a credential format that R8/`SECRET_PATTERNS` should
   plausibly catch but does not (include a sanitized example, never a live key).
 - CI workflow weaknesses that would let a protocol change land unguarded.
 
-Out of scope (by design, documented in `improve/BLINDSPOTS.md`):
+Out of scope (by design, documented in `core/improve/BLINDSPOTS.md`):
 
 - "The validator can't prove the agent actually ran the command" — execution
   authenticity is BS-01, an accepted limit; hard guarantees belong in the

@@ -1,4 +1,4 @@
-# evals/ — regression gate for AUDIT.md
+# core/evals/ — regression gate for AUDIT.md
 
 Every change to `AUDIT.md` must keep this suite green. The harness validates
 **agent outputs** (a run's `docs/BACKLOG.md` + `docs/HANDOFF.md`) against the
@@ -22,7 +22,7 @@ AUDIT.md so R3 needs no `--protected` double entry — BS-13).
 | File | Role |
 |---|---|
 | `code_audit_validator.py` | The validator implementation. Zero dependencies (stdlib only); published to PyPI as `code-audit-validator`. |
-| `validate.py` | Repo-side CLI shim over the module above — every documented `python3 evals/validate.py …` invocation goes through it. |
+| `validate.py` | Repo-side CLI shim over the module above — every documented `python3 core/evals/validate.py …` invocation goes through it. |
 | `fixtures/` | `G*` = compliant outputs that must pass. `B*` = fault-injection traps that must fail with declared codes. |
 | `rules.json` | Rule registry: rule → AUDIT.md anchor → violation codes → fixtures proving it. Coverage gaps are declared honestly. |
 | `baseline.json` | Last recorded matrix (fixture → outcome) pinned to an AUDIT.md version + sha256. |
@@ -31,19 +31,19 @@ AUDIT.md so R3 needs no `--protected` double entry — BS-13).
 ## Commands
 
 ```bash
-python3 evals/validate.py --all                  # full suite, human output
-python3 evals/validate.py --all --json           # machine-readable
-./evals/run-evals.sh --record                    # run + pin baseline to current AUDIT.md
-python3 evals/validate.py --run <dir>            # validate a real run's docs/ output
-python3 evals/validate.py --run <dir> --report json   # structured findings export (schemas/report.v1.json)
-python3 evals/validate.py --run <dir> --report sarif  # GitHub code-scanning format
-python3 evals/validate.py --aggregate r1.json r2.json # portfolio roll-up over report JSONs
-python3 evals/validate.py --batch targets.yaml        # fleet runner: per-target reports + portfolio.json
-python3 evals/validate.py --compare prev.json curr.json  # run-over-run regressions (reopened tasks, new codes)
-python3 evals/validate.py --run <dir> --emit-feedback # feedback@1 calibration record (schemas/feedback.v1.json)
-python3 evals/validate.py --run <dir> --fail-on High  # severity exit-code policy (all violations still printed)
-python3 evals/scripts/retro-summary.py           # retro scores per protocol version (did each release help?)
-python3 evals/scripts/retro-summary.py --feedback-dir <field-data>  # + per-version FIELD trend
+python3 core/evals/validate.py --all                  # full suite, human output
+python3 core/evals/validate.py --all --json           # machine-readable
+./core/evals/run-evals.sh --record                    # run + pin baseline to current AUDIT.md
+python3 core/evals/validate.py --run <dir>            # validate a real run's docs/ output
+python3 core/evals/validate.py --run <dir> --report json   # structured findings export (core/schemas/report.v1.json)
+python3 core/evals/validate.py --run <dir> --report sarif  # GitHub code-scanning format
+python3 core/evals/validate.py --aggregate r1.json r2.json # portfolio roll-up over report JSONs
+python3 core/evals/validate.py --batch targets.yaml        # fleet runner: per-target reports + portfolio.json
+python3 core/evals/validate.py --compare prev.json curr.json  # run-over-run regressions (reopened tasks, new codes)
+python3 core/evals/validate.py --run <dir> --emit-feedback # feedback@1 calibration record (core/schemas/feedback.v1.json)
+python3 core/evals/validate.py --run <dir> --fail-on High  # severity exit-code policy (all violations still printed)
+python3 core/evals/scripts/retro-summary.py           # retro scores per protocol version (did each release help?)
+python3 core/evals/scripts/retro-summary.py --feedback-dir <field-data>  # + per-version FIELD trend
 ```
 
 Field-run accuracy evaluation (tiers, metrics, calibration pipeline):
@@ -73,7 +73,7 @@ Validating artifacts produced under an older protocol? Pin the matching tag
 
 ## Adding a fixture
 
-1. Create `evals/fixtures/<Gnn|Bnn>-<slug>/` with `fixture.yaml` + `docs/BACKLOG.md` (and `docs/HANDOFF.md` if relevant).
+1. Create `core/evals/fixtures/<Gnn|Bnn>-<slug>/` with `fixture.yaml` + `docs/BACKLOG.md` (and `docs/HANDOFF.md` if relevant).
 2. `fixture.yaml` is flat `key: value` (no YAML library needed):
 
    ```yaml
@@ -87,11 +87,11 @@ Validating artifacts produced under an older protocol? Pin the matching tag
 
 3. For `expect: fail`, the validator must report **exactly** `expected_violations` — plant one fault per fixture unless the fixture's purpose is exact-set verification (B16). Keep `docs/BACKLOG.md` template-conformant (Mode line + tables or the R7 line) so the planted fault is the only signal; ship a near-miss `G*` sibling when adding a new rule, so precision is pinned alongside recall.
 4. Register the fixture in `rules.json` under the rule(s) it exercises — `validate.py --all` fails on registry drift in either direction (BS-10).
-5. Run `./evals/run-evals.sh --record`.
+5. Run `./core/evals/run-evals.sh --record`.
 
 ## What the validator cannot see (declared gaps)
 
-The authoritative register is [`improve/BLINDSPOTS.md`](../improve/BLINDSPOTS.md)
+The authoritative register is [`core/improve/BLINDSPOTS.md`](../improve/BLINDSPOTS.md)
 — one row per blind spot, with status and evidence. Headlines:
 
 - Whether code changes were genuinely valuable (retro item 9 — human judgment).

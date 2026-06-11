@@ -22,13 +22,15 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parents[3]   # repo root
+CORE = ROOT / "core"
+SITE = ROOT / "site"
 
 
 def main():
     problems = []
 
-    audit = (ROOT / "AUDIT.md").read_text(encoding="utf-8")
+    audit = (CORE / "AUDIT.md").read_text(encoding="utf-8")
     m = re.search(r"v\d+\.\d+\.\d+", audit.splitlines()[0])
     if not m:
         print("DRIFT: AUDIT.md title line carries no vX.Y.Z version")
@@ -53,39 +55,39 @@ def main():
         if not pm or pm.group(1) != bare:
             problems.append(f"pyproject.toml version {pm.group(1) if pm else '(missing)'} != {bare}")
 
-    validator = (ROOT / "evals" / "code_audit_validator.py").read_text(encoding="utf-8")
+    validator = (CORE / "evals" / "code_audit_validator.py").read_text(encoding="utf-8")
     vm = re.search(r"CURRENT_PROTOCOL\s*=\s*\((\d+),\s*(\d+),\s*(\d+)\)", validator)
     if not vm or "v" + ".".join(vm.groups()) != ver:
         problems.append(f"code_audit_validator.py CURRENT_PROTOCOL {'v' + '.'.join(vm.groups()) if vm else '(missing)'} != {ver} — version-aware template gating out of lockstep")
 
-    baseline = json.loads((ROOT / "evals" / "baseline.json").read_text(encoding="utf-8"))
+    baseline = json.loads((CORE / "evals" / "baseline.json").read_text(encoding="utf-8"))
     if baseline.get("audit_md_version") != ver:
         problems.append(f"baseline.json audit_md_version {baseline.get('audit_md_version')} != {ver}")
     if not baseline.get("all_ok"):
         problems.append("baseline.json all_ok is false — do not ship a red baseline")
 
-    ch = re.search(r"(?m)^## (v\d+\.\d+\.\d+)", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"))
+    ch = re.search(r"(?m)^## (v\d+\.\d+\.\d+)", (CORE / "CHANGELOG.md").read_text(encoding="utf-8"))
     if not ch or ch.group(1) != ver:
         problems.append(f"CHANGELOG.md newest entry {ch.group(1) if ch else '(none)'} != {ver}")
 
-    if not (ROOT / "improve" / "versions" / f"AUDIT-{ver}.md").exists():
-        problems.append(f"improve/versions/AUDIT-{ver}.md missing — release was not snapshotted")
+    if not (CORE / "improve" / "versions" / f"AUDIT-{ver}.md").exists():
+        problems.append(f"core/improve/versions/AUDIT-{ver}.md missing — release was not snapshotted")
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     if f"current release **{ver}**" not in readme:
         problems.append(f"README.md lacks 'current release **{ver}**' marker")
 
-    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    html = (SITE / "index.html").read_text(encoding="utf-8")
     for marker in (f"{ver} · evals", f"AUDIT.md {ver}"):
         if marker not in html:
             problems.append(f"index.html lacks current-version marker '{marker}'")
 
     # --- fixture-count surfaces -------------------------------------------
-    n_disk = sum(1 for d in (ROOT / "evals" / "fixtures").iterdir() if d.is_dir())
+    n_disk = sum(1 for d in (CORE / "evals" / "fixtures").iterdir() if d.is_dir())
     if baseline.get("fixtures") != n_disk:
         problems.append(f"baseline.json fixtures {baseline.get('fixtures')} != {n_disk} on disk")
     count_re = re.compile(r"(\d+)\s*/\s*(\d+)\s*(?:fixtures|green|OK)|(\d+) of (\d+) fixtures|(\d+) fixtures")
-    for name in ("README.md", "index.html", "evals/README.md"):
+    for name in ("README.md", "site/index.html", "core/evals/README.md"):
         text = (ROOT / name).read_text(encoding="utf-8")
         for mt in count_re.finditer(text):
             nums = [int(x) for x in mt.groups() if x]
