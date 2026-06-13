@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>AUDIT.md by CyberSkill — an honest, self-improving audit protocol for AI coding agents</title>
-<meta name="description" content="AUDIT.md is a ~160-line, AI-agnostic master prompt that turns any coding agent into an evidence-based codebase auditor — with a self-improvement loop, versioned releases, and a fault-injection regression harness. Built by CyberSkill." />
+<meta name="description" content="AUDIT.md is a ~180-line, AI-agnostic master prompt that turns any coding agent into an evidence-based codebase auditor — with a self-improvement loop, versioned releases, and a fault-injection regression harness. Built by CyberSkill." />
 <meta property="og:title" content="AUDIT.md by CyberSkill — honest audits from AI coding agents" />
 <meta property="og:description" content="Evidence or nothing. Honest targets only. A protocol that improves itself — every change evidenced, versioned, and regression-gated." />
 <meta property="og:type" content="website" />
@@ -265,7 +265,7 @@ L2-T1 <span class="tk-r">High</span> Testing — parser failure paths uncovered
       <div class="stat glass"><b>181<span style="color:#a35c12">↓</span></b><span>lines of protocol</span><span class="mono-sub">v1 was 1,898 — tightness is a feature</span></div>
       <div class="stat glass"><b>8</b><span>core rules, evidence-first</span><span class="mono-sub">R1–R8, critical rules placed first</span></div>
       <div class="stat glass"><b>40/40</b><span>regression fixtures green</span><span class="mono-sub">fault-injection traps, stdlib only</span></div>
-      <div class="stat glass"><b>5</b><span>self-improvement campaigns run</span><span class="mono-sub">5 releases, stopped by its own rule</span></div>
+      <div class="stat glass"><b>6</b><span>self-improvement campaigns run</span><span class="mono-sub">6 releases (v1.0.0–v1.5.0), stopped by its own rule</span></div>
     </div>
   </div>
 </header>
@@ -384,7 +384,7 @@ L2-T1 <span class="tk-r">High</span> Testing — parser failure paths uncovered
 
     <div style="margin-top:var(--sp-6)" class="card glass-heavy">
       <h3>The regression gate, in one command</h3>
-      <p style="margin:8px 0 14px;font-size:14px;color:#5b3a22">Twelve fault-injection traps plant exactly one violation each — a fabricated metric, an uncited "Palantir-grade" target, a leaked AWS key, an unapproved execution. The validator must catch each planted fault and nothing else. A trap that stops tripping means a rule has died — and the edit is blocked.</p>
+      <p style="margin:8px 0 14px;font-size:14px;color:#5b3a22">27 fault-injection traps plant exactly one violation each — a fabricated metric, an uncited "Palantir-grade" target, a leaked AWS key, an unapproved execution. The validator must catch each planted fault and nothing else. A trap that stops tripping means a rule has died — and the edit is blocked.</p>
       <div class="codeblock" role="img" aria-label="Eval harness output showing 40 of 40 fixtures green">$ python3 core/evals/validate.py --all
 <span class="g">[PASS]</span> B01-fabricated-metric      <span class="c">expect=fail → trapped as expected</span>
 <span class="g">[PASS]</span> B07-secret-leak            <span class="c">expect=fail → trapped as expected</span>

@@ -1,6 +1,6 @@
 # AUDIT.md — an honest, self-improving audit protocol for AI coding agents
 
-**AUDIT.md** is a ~160-line, AI-agnostic master prompt that turns any coding agent
+**AUDIT.md** is a ~180-line, AI-agnostic master prompt that turns any coding agent
 (Claude Code, Cursor, Gemini CLI, Codex CLI, Windsurf, …) into a rigorous,
 evidence-based codebase auditor that works in loops across multiple sessions —
 and **ships with the machinery to improve its own prompt over time**: a

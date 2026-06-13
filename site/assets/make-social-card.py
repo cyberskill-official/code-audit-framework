@@ -39,10 +39,21 @@ cairosvg.svg2png(url=str(ROOT / "site" / "assets" / "cyberskill-logo.svg"),
 
 img = Image.new("RGB", (W, H), BROWN)             # flat: the logo's own bg blends seamlessly
 d = ImageDraw.Draw(img)
-F = "/usr/share/fonts/truetype/dejavu/DejaVuSans{}.ttf"
-bold = lambda s: ImageFont.truetype(F.format("-Bold"), s)        # noqa: E731
-reg = lambda s: ImageFont.truetype(F.format(""), s)              # noqa: E731
-mono = lambda s: ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", s)  # noqa: E731
+def _font(paths, size):
+    """Resolve the first available font (portable across Linux CI + macOS dev)."""
+    for _p in paths:
+        try:
+            return ImageFont.truetype(_p, size)
+        except OSError:
+            continue
+    return ImageFont.load_default()
+
+_SANS = ["/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Helvetica.ttc"]
+_BOLD = ["/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/System/Library/Fonts/Helvetica.ttc"]
+_MONO = ["/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", "/System/Library/Fonts/Menlo.ttc", "/System/Library/Fonts/Supplemental/Courier New.ttf"]
+bold = lambda s: _font(_BOLD, s)   # noqa: E731
+reg = lambda s: _font(_SANS, s)    # noqa: E731
+mono = lambda s: _font(_MONO, s)   # noqa: E731
 
 logo = Image.open("/tmp/_cs_logo.png").convert("RGB")
 img.paste(logo, (SAFE + 30, (H - logo.height) // 2 - 30))

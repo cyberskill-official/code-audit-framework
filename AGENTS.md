@@ -4,6 +4,13 @@ This repo ships AUDIT.md, an agent audit protocol, plus the machinery that
 improves it. You are either auditing a TARGET repo with it, or improving the
 protocol itself. Identify which job you were given before acting.
 
+## Engineering standards (all CyberSkill projects)
+- **Node.js >= 24 is the floor.** Every CyberSkill repo — this one, audited
+  targets, and CI — runs on Node 24 or newer. Pin it locally with `.node-version`
+  and `engines.node: ">=24"` in package.json; in GitHub Actions set
+  `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` at the workflow level so SHA-pinned
+  actions run on the Node 24 runtime. Treat a Node < 24 toolchain as a finding.
+
 ## Job A — run the auditor on a target repo
 1. Read `AUDIT.md` fully. Fill its CONFIG block from the user's answers;
    default to `MODE: gated` unless told otherwise.
