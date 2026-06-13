@@ -406,7 +406,7 @@ NO_FINDINGS_RE = re.compile(r"No significant findings", re.IGNORECASE)
 # that echo an older `Protocol:` are judged by THAT version's template —
 # version-aware validation, architect review F-5. Artifacts without the echo
 # are assumed current (and, from v1.3.0 on, flagged for omitting it).
-CURRENT_PROTOCOL = (1, 3, 0)
+CURRENT_PROTOCOL = (1, 4, 0)
 MODE_ECHO_SINCE = (1, 1, 0)
 PROTO_ECHO_SINCE = (1, 3, 0)
 

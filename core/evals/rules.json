@@ -99,6 +99,15 @@
       "coverage_note": "Positive-path fixture: a zero-findings loop MUST validate clean. Padding detection is judgment-based — covered by retrospective item 3, not the validator."
     },
     {
+      "rule_id": "PHASE4-REEVAL",
+      "anchor": "PHASE 4 — re-evaluate below-floor items whose premise a completed task changed (v1.4.0)",
+      "violation_codes": [],
+      "fixtures_exercising": [
+        "G12-below-floor-reeval"
+      ],
+      "coverage_note": "Behavior rule, gold-only (like R7): when a task completed this loop changes the premise of an issue logged below SEVERITY_FLOOR, Phase 4 must re-rate it and carry any that now cross the floor into the next loop's backlog. Whether the agent actually re-rated is a semantic/recall property — not soundly machine-detectable without false positives — so the validator does not flag the omission; G12 pins the conformant two-loop re-promotion as a tested, locked example so a future validator change cannot wrongly flag it. Trigger: FAILURE_LOG 2026-06-13 (below-floor staleness); promoted at maintainer request at 1 observation (Rule of Three explicitly waived). A sound opt-in enforcement (a structured 'escalates to <Sev> when <ID> done' clause plus a check) is proposed for a future cycle in the session handoff."
+    },
+    {
       "rule_id": "R8",
       "anchor": "CORE RULES > R8 — REDACT SECRETS",
       "violation_codes": [

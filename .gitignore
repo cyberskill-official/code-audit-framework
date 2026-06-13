@@ -22,6 +22,8 @@ __pycache__/
 *.pyd
 .pytest_cache/
 .mypy_cache/
+.venv/
+venv/
 
 # Editor noise
 .vscode/

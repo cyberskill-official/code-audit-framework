@@ -19,7 +19,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "code-audit-validator"
-version = "1.3.0"
+version = "1.4.0"
 description = "Deterministic conformance checker for AUDIT.md agent-audit outputs — CyberSkill code-audit-framework"
 readme = { file = "core/evals/README.md", content-type = "text/markdown" }
 license = { file = "LICENSE" }

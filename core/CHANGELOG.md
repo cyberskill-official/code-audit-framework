@@ -15,6 +15,13 @@ Versioning: **MAJOR.MINOR.PATCH**
 
 ---
 
+## v1.4.0 — 2026-06-13 (improvement campaign 5, cycle 12)
+
+- **MINOR: Phase 4 re-evaluates below-floor items whose premise changed.** A new Phase 4 bullet requires re-rating, before the stop test, any issue logged below `SEVERITY_FLOOR` whose premise a task completed this loop changed (e.g. a "CORS is Low until auth exists" note, after auth is added); if it now meets the floor it is carried into the next loop's backlog as an OPEN finding, and a stale below-floor severity is never a stop reason. Net protocol size change: +5 lines (one bullet; AUDIT.md 164→169 lines, still ≤200).
+- **Trigger:** FAILURE_LOG 2026-06-13 — "below-floor staleness", surfaced by the T4 cross-model diff on kymondongiap: Claude's own below-floor note said CORS "becomes High the moment auth is added", Claude then added auth (T2) but never re-classified CORS; Gemini, auditing fresh, scored it High. **Rule of Three explicitly waived by the maintainer (Stephen, 2026-06-13)** — promoted at 1 observation on his instruction; the protocol normally logs a single observation rather than codifying it. Recorded as a waiver in both FAILURE_LOG and rules.json so the exception is auditable.
+- **Coverage (honest):** behavior rule, gold-only — whether an agent actually re-rated a below-floor item is a semantic/recall property, not soundly machine-detectable without false positives, so the validator does NOT flag the omission (same posture as R7's padding note). New rules.json rule `PHASE4-REEVAL`; new fixture `G12-below-floor-reeval` pins the conformant two-loop re-promotion so the pattern is a tested, locked example a future validator change can't wrongly flag. A sound opt-in enforcement (a structured `escalates to <Sev> when <ID> done` clause + check) is proposed for a future cycle.
+- **Eval:** **38/38 green** (was 37/37; +G12), baseline re-recorded at v1.4.0. AUDIT.md/baseline otherwise unchanged.
+
 ## v1.3.0 — 2026-06-10 (improvement campaign 4, cycle 1)
 
 - **MINOR: The backlog now echoes its protocol version.** Phase 2's "Scope & method" template line opens with `Protocol: <this file's title version>`, making every artifact self-describing. The validator gates template requirements on the stated version (a v1.0.0 artifact is judged by the v1.0.0 template — no Mode echo required; a current artifact omitting the echo is itself nonconformant), which makes mixed-version artifact fleets validate correctly from v1.3.0 forward. Net protocol size change: 0 lines (edit to an existing template line; AUDIT.md remains 164 lines).
