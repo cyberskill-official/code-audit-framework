@@ -21,6 +21,9 @@ machine-checkable subset of AUDIT.md's core rules:
   R6-NO-ROOTCAUSE    BLOCKED task without a "Root cause:" note
   R8-SECRET          unredacted credential pattern in any output file
   P5-NO-STOP-REASON  HANDOFF.md does not cite which stop condition fired
+  TARGET-HEALTH-UNVERIFIED  completed HANDOFF (v1.5.0+) lacks a `Target health:
+                     PASS|FAIL` line — the target's RUN_COMMANDS were not verified
+                     to still pass after the audit's changes (Phase 5 gate)
   HANDOFF-BAD-MSTATUS  metrics Status outside the closed metric-status set
   GATED-UNAPPROVED-EXEC  executed task not on the loop's `Approved:` line (gated mode)
   TEMPLATE-NONCONFORMANT BACKLOG.md does not follow the Phase 2 template, so the
@@ -106,6 +109,10 @@ UNMEASURED_RE = re.compile(r"\b(UNMEASURED|NOT-APPLICABLE)\b")
 REASONED_RE = re.compile(r"\b(?:UNMEASURED|NOT-APPLICABLE)\s*\([^)]+\)")
 URL_RE = re.compile(r"https?://\S+")
 STOP_RE = re.compile(r"Stop condition:\s*\(?[abc]\)?", re.IGNORECASE)
+# Phase 5 target-health gate (v1.5.0): a completed run's HANDOFF must record that
+# the target still passes its own RUN_COMMANDS after the audit's changes.
+HEALTH_RE = re.compile(r"(?mi)Target health:\s*(PASS|FAIL)\b")
+AUDIT_TITLE_VER_RE = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
 
 
 CELL_SPLIT_RE = re.compile(r"(?<!\\)\|")  # an escaped \| is cell CONTENT, not a separator
@@ -406,9 +413,10 @@ NO_FINDINGS_RE = re.compile(r"No significant findings", re.IGNORECASE)
 # that echo an older `Protocol:` are judged by THAT version's template —
 # version-aware validation, architect review F-5. Artifacts without the echo
 # are assumed current (and, from v1.3.0 on, flagged for omitting it).
-CURRENT_PROTOCOL = (1, 4, 0)
+CURRENT_PROTOCOL = (1, 5, 0)
 MODE_ECHO_SINCE = (1, 1, 0)
 PROTO_ECHO_SINCE = (1, 3, 0)
+TARGET_HEALTH_SINCE = (1, 5, 0)  # Phase 5 HANDOFF must record a Target health: PASS/FAIL line
 
 
 def check_template_conformance(text, violations, src):
@@ -633,11 +641,23 @@ def validate_run(run_dir: Path, protected=None, waived_out=None):
     check_config_preflight(docs.parent, violations, protected, profile_cfg)
     backlog = docs / "BACKLOG.md"
     handoff = docs / "HANDOFF.md"
+    # Run's protocol version (for version-gated checks): a target AUDIT.md copy
+    # wins, else the BACKLOG's first `Protocol:` echo, else assume current.
+    run_proto = CURRENT_PROTOCOL
+    _audit_copy = docs.parent / "AUDIT.md"
+    if _audit_copy.exists():
+        _m = AUDIT_TITLE_VER_RE.search(_audit_copy.read_text(encoding="utf-8", errors="replace").splitlines()[0])
+        if _m:
+            run_proto = tuple(int(g) for g in _m.groups())
     if not backlog.exists():
         violations.append(("MISSING-FILE", "docs/BACKLOG.md", "file not found"))
     if backlog.exists():
         text = read_artifact(backlog, violations, "BACKLOG.md")
         if text is not None:
+            if not _audit_copy.exists():
+                _pm = PROTO_LINE_RE.search(text)
+                if _pm:
+                    run_proto = tuple(int(g) for g in _pm.groups())
             check_template_conformance(text, violations, "BACKLOG.md")
             check_secrets(text, violations, "BACKLOG.md", secret_patterns)
             check_approvals(text, violations, "BACKLOG.md")
@@ -656,6 +676,14 @@ def validate_run(run_dir: Path, protected=None, waived_out=None):
             check_secrets(text, violations, "HANDOFF.md", secret_patterns)
             if not STOP_RE.search(text):
                 violations.append(("P5-NO-STOP-REASON", "HANDOFF.md", "no 'Stop condition: (a|b|c)' line"))
+            # Target-health gate (v1.5.0): a HANDOFF that declares the run complete
+            # (cites a stop condition) must prove the target still passes its own
+            # RUN_COMMANDS — a `Target health: PASS|FAIL` line. Version-gated so
+            # pre-v1.5.0 artifacts are judged by their own template.
+            elif run_proto >= TARGET_HEALTH_SINCE and not HEALTH_RE.search(text):
+                violations.append(("TARGET-HEALTH-UNVERIFIED", "HANDOFF.md",
+                                   "completed run (stop condition cited) has no 'Target health: PASS|FAIL' line — "
+                                   "RUN_COMMANDS were not verified after the audit's changes (Phase 5; run core/evals/verify-target.sh)"))
             for header, rows, end in parse_tables(text):
                 if col(header, "metric") is not None:
                     check_benchmark_like_table(header, rows, end, text, violations, "HANDOFF.md", is_handoff=(col(header, "final") is not None), gui_tools=gui_tools)
@@ -896,6 +924,7 @@ VIOLATION_SEVERITY = {
     "R1-GUI-TOOL": "High", "R2-UNCITED": "High", "R2-NONNUMERIC": "High",
     "TEMPLATE-NONCONFORMANT": "High", "CONFIG-PLACEHOLDER": "High", "CONFIG-BAD-ENUM": "High",
     "MALFORMED-FILE": "High", "WAIVER-EXPIRED": "High", "MISSING-FILE": "High",
+    "TARGET-HEALTH-UNVERIFIED": "High",
     "R5-BAD-STATUS": "Medium", "R5-BAD-SEV": "Medium", "R5-BAD-ID": "Medium",
     "R6-NO-ROOTCAUSE": "Medium", "P5-NO-STOP-REASON": "Medium", "HANDOFF-BAD-MSTATUS": "Medium",
 }

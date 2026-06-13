@@ -13,10 +13,10 @@ weakens a rule.
 
 | | |
 |---|---|
-| Protocol | [`AUDIT.md`](./core/AUDIT.md) — current release **v1.4.0** |
+| Protocol | [`AUDIT.md`](./core/AUDIT.md) — current release **v1.5.0** |
 | History | [`CHANGELOG.md`](./core/CHANGELOG.md) · immutable copies in [`core/improve/versions/`](./core/improve/versions/) |
 | Self-improvement | [`core/improve/CRITIC.md`](./core/improve/CRITIC.md) — one evidenced change per cycle |
-| Regression gate | [`core/evals/`](./core/evals/) — **38 fixtures, 38/38 green** at v1.4.0, stdlib-only Python; enforced in CI on every push |
+| Regression gate | [`core/evals/`](./core/evals/) — **40 fixtures, 40/40 green** at v1.5.0, stdlib-only Python; enforced in CI on every push |
 | For agents | [`AGENTS.md`](./AGENTS.md) — machine-facing operating rules for this repo |
 | License | [Apache-2.0](./LICENSE) · [`CONTRIBUTING.md`](./docs/CONTRIBUTING.md) · [`SECURITY.md`](./docs/SECURITY.md) |
 
@@ -262,7 +262,7 @@ regression-tested, and changed only with evidence.
    core/improve/CRITIC.md         ──  ONE minimal change; PATCH/MINOR/MAJOR
                   │
                   ▼
-   core/evals/validate.py --all   ──  38 fixtures must stay green
+   core/evals/validate.py --all   ──  40 fixtures must stay green
                   │
                   ▼
    CHANGELOG.md + core/improve/versions/AUDIT-vX.Y.Z.md  (immutable release)
@@ -309,7 +309,7 @@ Full evidence trail: [`CHANGELOG.md`](./core/CHANGELOG.md),
 ## The regression harness
 
 ```bash
-python3 core/evals/validate.py --all      # 38 fixtures: G* must pass, B* must trip
+python3 core/evals/validate.py --all      # 40 fixtures: G* must pass, B* must trip
 ./core/evals/run-evals.sh --record        # run + pin baseline.json to AUDIT.md's sha256
 python3 core/evals/validate.py --run DIR  # validate any real run's docs/ output
 python3 core/evals/validate.py --run DIR --report json   # structured findings export (or: sarif)
@@ -353,7 +353,7 @@ core/                      ← the engine (CyberOS-absorbable as one unit)
     versions/ · retros/        immutable releases · scored history
   evals/                     the regression gate — map: evals/README.md
     validate.py                CLI shim → code_audit_validator.py (stdlib only)
-    fixtures/                  38 fixtures: G* precision runs + B* fault-injection traps
+    fixtures/                  40 fixtures: G* precision runs + B* fault-injection traps
     rules.json · baseline.json registry · last green matrix (sha256-pinned)
     run-evals.sh · scripts/    runner · docs-sync checker, retro aggregator
     TESTING-PROTOCOL.md        field-run accuracy tiers, metrics, calibration

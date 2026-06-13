@@ -185,6 +185,18 @@
       "coverage_note": "HANDOFF.md presence itself is not required by --run (mid-flight runs are legitimate), so a 'finished' run that skipped Phase 5 validates clean — reviewers of completed runs must confirm the file exists. See improve/BLINDSPOTS.md BS-09."
     },
     {
+      "rule_id": "TARGET-HEALTH",
+      "anchor": "PHASE 4/5 — target health gate (v1.5.0): the audited target must still pass its own RUN_COMMANDS",
+      "violation_codes": [
+        "TARGET-HEALTH-UNVERIFIED"
+      ],
+      "fixtures_exercising": [
+        "G13-target-health-pass",
+        "B27-target-health-unverified"
+      ],
+      "coverage_note": "Two halves: (1) executable — core/evals/verify-target.sh runs the target's RUN_COMMANDS (build/lint/typecheck/test) with a timeout and exits non-zero on any failure/hang; this is the actual 'did the target still run after the audit' check, since the validator cannot run builds. (2) artifact — a HANDOFF that cites a stop condition (a completed run) must carry a `Target health: PASS|FAIL` line proving RUN_COMMANDS were re-run; absence is TARGET-HEALTH-UNVERIFIED. Version-gated to v1.5.0+ artifacts (older runs judged by their own template, like the Mode/Protocol echoes). Trigger: FAILURE_LOG 2026-06-13 — a lint fix scoped to src/ shipped while the target's own `ruff check .` (tests/ + E402) stayed red because RUN_COMMANDS were never run post-change. G13 pins the conformant PASS handoff; B27 the missing-record violation."
+    },
+    {
       "rule_id": "ARTIFACT-IO",
       "anchor": "R4 / Phase 2 — artifacts are UTF-8 text files of sane size",
       "violation_codes": [

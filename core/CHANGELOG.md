@@ -15,6 +15,13 @@ Versioning: **MAJOR.MINOR.PATCH**
 
 ---
 
+## v1.5.0 — 2026-06-14 (improvement campaign 6, cycle 13)
+
+- **MINOR: TARGET HEALTH GATE — the audited target must still pass its own RUN_COMMANDS.** Phase 4 now requires that, after any code change, the auditor runs the target's full RUN_COMMANDS (build / lint / typecheck / test) end-to-end with raw output and a per-command timeout; the loop is not complete while they are red. Phase 5 HANDOFF gains a required `Target health: PASS|FAIL` line — a run may not be declared complete without proving the target still builds/lints/tests. AUDIT.md 169→181 lines (≤200).
+- **Trigger (FAILURE_LOG 2026-06-13):** during the 2026-06 fine-tuning, a kymondongiap lint fix scoped to `src/` shipped while the target's own CI (`ruff check .`, which covers `tests/` + E402) stayed RED — because the audit never re-ran the target's RUN_COMMANDS after the change. The artifact-validator cannot run builds, so nothing caught it. This is the maintainer's explicitly-requested mechanism: "strictly verify the target still runs without error after the audit."
+- **Two enforcing halves:** (1) executable — new `core/evals/verify-target.sh` reads RUN_COMMANDS from the target's `audit-profile.yaml`/AUDIT.md, runs each with a portable timeout, and exits non-zero on any failure/hang (smoke-tested: PASS→0, FAIL→1, TIMEOUT→1). (2) artifact — new validator check `TARGET-HEALTH-UNVERIFIED` (rules.json `TARGET-HEALTH`): a completed HANDOFF (stop condition cited) lacking the `Target health:` line is flagged. **Version-gated to v1.5.0+** artifacts (older runs judged by their own template, like the Mode/Protocol echoes), so existing fixtures are untouched.
+- **Eval:** **40/40 green** (was 38/38; +G13 conformant PASS handoff, +B27 missing-record violation), baseline re-recorded at v1.5.0.
+
 ## v1.4.0 — 2026-06-13 (improvement campaign 5, cycle 12)
 
 - **MINOR: Phase 4 re-evaluates below-floor items whose premise changed.** A new Phase 4 bullet requires re-rating, before the stop test, any issue logged below `SEVERITY_FLOOR` whose premise a task completed this loop changed (e.g. a "CORS is Low until auth exists" note, after auth is added); if it now meets the floor it is carried into the next loop's backlog as an OPEN finding, and a stale below-floor severity is never a stop reason. Net protocol size change: +5 lines (one bullet; AUDIT.md 164→169 lines, still ≤200).

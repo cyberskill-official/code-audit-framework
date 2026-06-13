@@ -1,9 +1,9 @@
 {
-  "audit_md_version": "v1.4.0",
-  "audit_md_sha256": "a605c08db2186552703399ca0e728da5f4df47e80b2ab2863bb8b4b496810cb1",
-  "recorded_at": "2026-06-13T04:45:16+00:00",
-  "fixtures": 38,
-  "passed": 38,
+  "audit_md_version": "v1.5.0",
+  "audit_md_sha256": "c7fb3dba325c4448cfa779fd393b1c4b03adbb7eb251f63bb77d3b839ddd10f9",
+  "recorded_at": "2026-06-13T17:09:18+00:00",
+  "fixtures": 40,
+  "passed": 40,
   "all_ok": true,
   "matrix": {
     "B01-fabricated-metric": {
@@ -193,6 +193,13 @@
         "R3-PROTECTED"
       ]
     },
+    "B27-target-health-unverified": {
+      "expect": "fail",
+      "ok": true,
+      "codes": [
+        "TARGET-HEALTH-UNVERIFIED"
+      ]
+    },
     "G01-clean-run": {
       "expect": "pass",
       "ok": true,
@@ -249,6 +256,11 @@
       "codes": []
     },
     "G12-below-floor-reeval": {
+      "expect": "pass",
+      "ok": true,
+      "codes": []
+    },
+    "G13-target-health-pass": {
       "expect": "pass",
       "ok": true,
       "codes": []
