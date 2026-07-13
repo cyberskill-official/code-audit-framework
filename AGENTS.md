@@ -84,3 +84,24 @@ system; deployed by `.github/workflows/pages.yml`, which ships ONLY site/).
 `COMPLIANCE.md` · `CODE_OF_CONDUCT.md` (GitHub surfaces health files from docs/).
 **`.github/workflows/`:** evals CI gate · publish (PyPI via OIDC) · pages —
 all actions SHA-pinned.
+
+---
+
+# AGENTS.md
+
+This repository runs **CyberOS**. Any coding agent working here follows these rules.
+This file is the cross-tool spine; the full one-pager is `.cyberos/AGENT-ENTRY.md`.
+
+1. Work = feature requests. Read `.cyberos/cuo/ship-feature-requests.md` and drive the
+   next eligible FR in `docs/feature-requests/BACKLOG.md` (frontmatter `status` is the
+   record of truth; one backlog for `class: product` and `class: improvement`).
+2. HITL is required. Halt at review acceptance (`reviewing -> ready_to_test`) and final
+   acceptance (`testing -> done`) for a recorded human verdict. Never set `done` yourself.
+   Doctrine: `.cyberos/cuo/EXECUTION-DISCIPLINE.md`; lifecycle: `.cyberos/cuo/STATUS-REFERENCE.md`.
+3. Gates: `bash .cyberos/cuo/gates/run-gates.sh` (reads `.cyberos/gates.env`). Green is
+   necessary, never sufficient.
+4. Memory (BRAIN): record decisions, audits, and plans into `.cyberos/memory/store/`
+   per the protocol in `.cyberos/memory/AGENTS.md`.
+5. Never push, deploy, merge, or delete without an explicit operator instruction.
+
+<!-- cyberos-agent-spine (managed by cyberos init; edit above/below this marker) -->

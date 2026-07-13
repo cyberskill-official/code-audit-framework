@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>code-audit-framework status</title>
+<link rel="stylesheet" href="assets/status.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+</head>
+<body data-template-id="status-hub@2">
+<a class="skip" href="#lens">Skip to content</a>
+
+<header class="hd">
+  <div class="wrap hd-in">
+    <div class="hd-id">
+      <span class="hd-mark" aria-hidden="true">C</span>
+      <div>
+        <h1>code-audit-framework status</h1>
+        <p class="hd-sub">Where code-audit-framework is and what is coming — generated from FR frontmatter, CHANGELOG and VERSION</p>
+      </div>
+    </div>
+    <div class="hd-side">
+      <p class="hd-meta">VERSION <span class="code">unversioned</span> · built from <span class="code">fd20b2e8b4e4</span> · 0 FRs · 1 releases</p>
+      <button id="theme" class="btn ghost" type="button" title="Toggle light / dark" aria-label="Toggle light / dark">◐</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="deck" aria-label="Project pulse">
+<div class="panel">
+  <h2>Overall progress · 0 feature requests · 0 modules</h2>
+  <div class="kpis">
+    <button class="kpi" type="button" data-bucket="done" title="Filter to done"><b>0</b><span><i class="dot seg-done"></i>done</span></button>
+    <button class="kpi" type="button" data-bucket="active" title="Filter to in flight"><b>0</b><span><i class="dot seg-active"></i>in flight</span></button>
+    <button class="kpi" type="button" data-bucket="todo" title="Filter to draft"><b>0</b><span><i class="dot seg-todo"></i>draft</span></button>
+    <button class="kpi" type="button" data-bucket="hold" title="Filter to on hold"><b>0</b><span><i class="dot seg-hold"></i>on hold</span></button>
+    <div class="kpi"><b>—</b><span>open effort (h)</span></div>
+  </div>
+  <div class="bar-seg">
+    <i class="seg-done" style="width:0.0%" title="done 0"></i>
+    <i class="seg-active" style="width:0.0%" title="in flight 0"></i>
+    <i class="seg-hold" style="width:0.0%" title="on hold 0"></i>
+  </div>
+  <div class="legend">
+    <span><i class="dot seg-done"></i> done / closed (0.0%)</span>
+    <span><i class="dot seg-active"></i> in flight — ready_to_implement → testing</span>
+    <span><i class="dot seg-todo"></i> draft</span>
+    <span><i class="dot seg-hold"></i> on hold</span>
+    <span class="muted">click a number to filter · click any FR to open it</span>
+  </div>
+</div>
+<div class="panel">
+  <h2>Releases · 1 · latest v0.1.0</h2>
+  <div class="spark"><a href="#timeline" title="v0.1.0 · 2026-07-13 — 0 FRs"><b>0</b><i style="height:4px"></i><span>0.1.0</span></a></div>
+  <p class="relnote">FRs bound to each release — cited in the entry, or matched by <code>shipped:</code> date.</p>
+</div></section>
+
+  
+
+  <nav class="bar" id="bar" aria-label="Search, filters and views">
+    <div class="bar-top">
+      <label class="srch">
+        <span class="ic" aria-hidden="true">⌕</span>
+        <input id="q" type="search" placeholder="Search 0 FRs — id, title, module, owner, phase…" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="lenses" role="tablist" aria-label="View">
+        <button class="ln" role="tab" type="button" data-lens="board" aria-selected="true">▦ Board</button>
+        <button class="ln" role="tab" type="button" data-lens="table" aria-selected="false">☰ Table</button>
+        <button class="ln" role="tab" type="button" data-lens="timeline" aria-selected="false">◷ Releases</button>
+      </div>
+    </div>
+    <div class="bar-bot">
+      <label class="facet">module<select id="f-m"><option value="">all</option></select></label>
+  <label class="facet">status<select id="f-s"><option value="">all</option></select></label>
+  <label class="facet">priority<select id="f-p"><option value="">all</option></select></label>
+  <label class="facet">class<select id="f-c"><option value="">all</option></select></label>
+  <label class="facet">phase<select id="f-ph"><option value="">all</option></select></label>
+  <label class="facet">group by<select id="f-g"><option value="m">module</option><option value="ph">phase</option><option value="s">status</option><option value="p">priority</option><option value="c">class</option><option value="o">owner</option></select></label>
+      <button id="clear" class="btn ghost sm" type="button">Clear</button>
+      <output id="count" class="cnt" for="q"></output>
+    </div>
+    <div class="chipbar" id="active-filters" hidden></div>
+  </nav>
+
+  <div id="lens" class="lens" role="region" aria-live="polite" aria-label="Feature requests"></div>
+
+  <noscript>
+    <div class="nojs">
+<p class="relnote">JavaScript is off, so the lenses, filters and the FR drawer are unavailable.
+Everything below is the same corpus, rendered statically.</p>
+<div class="tbl-wrap"><table><thead><tr>
+<th>id</th><th>title</th><th>module</th><th>class</th><th>priority</th><th>phase</th><th>status</th>
+</tr></thead><tbody>
+
+</tbody></table></div>
+<h3 class="groupq">Releases</h3>
+<article class="rel"><span class="tick">✓</span><div>
+  <div class="rel-h"><b>v0.1.0</b><span class="muted">2026-07-13</span></div>
+  
+  <div class="rel-sec"><h4>Notes</h4><ul><li>CyberOS initialised: FR workflow vendored to .cyberos/, backlog at docs/feature-requests/BACKLOG.md, status page at docs/status/.</li></ul></div>
+</div></article></div>
+  </noscript>
+
+  <footer class="ft">code-audit-framework — generated at unversioned (fd20b2e8b4e4). Markdown is the record of truth; this page only renders it.</footer>
+</main>
+
+<div id="scrim" class="scrim" hidden></div>
+<aside id="drawer" class="drawer" hidden role="dialog" aria-modal="true" aria-labelledby="dw-title"></aside>
+
+<script type="application/json" id="cs-data">{"project":"code-audit-framework","version":"unversioned","commit":"fd20b2e8b4e4","statuses":["draft","ready_to_implement","implementing","ready_to_review","reviewing","ready_to_test","testing","done","on_hold","closed"],"specDir":"data/fr","frBase":"../feature-requests/","frs":[],"releases":[{"v":"0.1.0","vl":"v0.1.0","d":"2026-07-13","intro":[],"sec":[{"h":"Notes","items":["CyberOS initialised: FR workflow vendored to .cyberos/, backlog at docs/feature-requests/BACKLOG.md, status page at docs/status/."]}],"cited":[],"dated":[]}],"bound":[]}</script>
+<script defer src="assets/status.js"></script>
+</body>
+</html>
