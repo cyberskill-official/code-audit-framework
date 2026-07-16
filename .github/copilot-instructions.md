@@ -1,4 +1,4 @@
-# GEMINI
+# copilot-instructions
 
 This repo runs **CyberOS**. Canonical agent instructions: `AGENTS.md` (root) and `.cyberos/AGENT-ENTRY.md`.
 
